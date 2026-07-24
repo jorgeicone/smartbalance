@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartBalance 50/30/20 - Gestor Financiero Interactivo</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js para gráficos de distribución -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Google Identity Services (login con Google + acceso a Drive) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            necesidad: {
+              DEFAULT: '#3b82f6',
+              light: '#60a5fa',
+              dark: '#1d4ed8'
+            },
+            gusto: {
+              DEFAULT: '#f97316',
+              light: '#fb923c',
+              dark: '#c2410c'
+            },
+            ahorro: {
+              DEFAULT: '#10b981',
+              light: '#34d399',
+              dark: '#047857'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-modal {
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(16px);
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white pb-16 sm:pb-0">
+
+  <header class="sticky top-0 z-30 glass-card border-b border-slate-800 bg-slate-900/80 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-blue-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid font-bold fa-scale-balanced text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+            SmartBalance <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-medium border border-indigo-500/30">50/30/20</span>
+          </h1>
+          <p class="text-xs text-slate-400 hidden sm:block">Control Financiero & Estrategia de Deudas</p>
+        </div>
+      </div>
+
+      <!-- Acciones de Cabecera -->
+      <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Área de autenticación Google / estado de nube -->
+        <div id="google-auth-area" class="flex items-center"></div>
+
+        <button onclick="openModal('ai-config-modal')" id="ai-config-btn" title="Configurar cerebro de IA (Gemini)" class="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition transform active:scale-95">
+          <i class="fa-solid fa-brain text-purple-400"></i>
+          <span class="hidden lg:inline">Cerebro IA</span>
+        </button>
+
+        <button onclick="toggleVoiceDictation()" id="voice-header-btn" title="Dictar por voz" class="flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-600/30 transition transform active:scale-95">
+          <i class="fa-solid fa-microphone"></i>
+          <span class="hidden md:inline">Dictar Voz</span>
+        </button>
+
+        <label for="ai-file-upload" class="cursor-pointer flex items-center space-x-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
+          <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+          <span class="hidden sm:inline">Subir Factura / Audio</span>
+          <span class="sm:hidden">Subir</span>
+          <input type="file" id="ai-file-upload" accept="image/*,.pdf,.txt,.csv,.doc,.docx,audio/*,.mp3,.wav,.m4a,.ogg,.webm" class="hidden" onchange="processUploadedFile(event)">
+        </label>
+
+        <button onclick="exportToCSV()" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+          <i class="fa-solid fa-file-csv text-emerald-400"></i>
+          <span>CSV</span>
+        </button>
+        <button onclick="openSheetsModal()" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 border border-emerald-800/60 transition">
+          <i class="fa-solid fa-table text-emerald-400"></i>
+          <span>Sheets</span>
+        </button>
+        <button onclick="openModal('expense-modal')" class="flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white shadow-lg shadow-indigo-600/30 transition transform active:scale-95">
+          <i class="fa-solid fa-plus"></i>
+          <span>+ Registro</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- Card de Ingreso Rápido con IA y Voz -->
+    <section class="glass-card rounded-2xl p-4 bg-gradient-to-r from-slate-900 via-slate-900/90 to-purple-950/40 border border-purple-500/30 shadow-xl">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+        <div class="flex items-center space-x-2">
+          <div class="w-8 h-8 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 border border-purple-500/30 shrink-0">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold text-white flex flex-wrap items-center gap-2">
+              Ingreso Rápido Inteligente <span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-full font-semibold">Voz, Texto o Archivo</span>
+            </h3>
+            <p class="text-xs text-slate-400">Dicta o escribe (ej. 'Cine Colombia 150000'); la IA clasifica automáticamente.</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <button type="button" onclick="toggleVoiceDictation()" id="voice-mic-btn" class="flex-1 sm:flex-none flex items-center justify-center space-x-2 text-xs font-semibold px-3 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-500 hover:to-pink-500 text-white border border-rose-500/40 shadow-lg shadow-rose-600/20 transition active:scale-95">
+            <i class="fa-solid fa-microphone"></i>
+            <span>Hablar / Comando Voz</span>
+          </button>
+
+          <label for="express-file-upload" class="cursor-pointer text-xs font-medium text-purple-300 hover:text-purple-200 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-950/60 border border-purple-800/60 hover:bg-purple-900/80 transition">
+            <i class="fa-solid fa-file-arrow-up text-purple-400"></i>
+            <span class="hidden md:inline">Escanear / Audio / PDF</span>
+            <span class="md:hidden">Archivo</span>
+            <input type="file" id="express-file-upload" accept="image/*,.pdf,.txt,.csv,audio/*,.mp3,.wav,.m4a,.ogg,.webm" class="hidden" onchange="processUploadedFile(event)">
+          </label>
+        </div>
+      </div>
+
+      <form onsubmit="handleExpressExpenseSubmit(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <div class="sm:col-span-6">
+          <div class="relative">
+            <input type="text" id="express-concept" required placeholder="Escribe o dicta: 'Mercado D1', 'Cine Colombia', 'Arriendo'..."
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-3.5 pr-10 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500 transition">
+            <button type="button" onclick="toggleVoiceDictation()" title="Usar Micrófono" class="absolute right-3 top-2.5 text-slate-400 hover:text-rose-400">
+              <i class="fa-solid fa-microphone text-sm"></i>
+            </button>
+          </div>
+        </div>
+        <div class="sm:col-span-3">
+          <div class="relative">
+            <span class="absolute left-3 top-2.5 text-xs text-slate-500">$</span>
+            <input type="number" step="0.01" min="0.01" id="express-amount" required placeholder="0.00"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-7 pr-3 py-2.5 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-purple-500 transition font-semibold">
+          </div>
+        </div>
+        <div class="sm:col-span-3">
+          <button type="submit" class="w-full h-full py-2.5 px-4 text-xs font-bold rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-600/30 transition flex items-center justify-center gap-2 active:scale-95">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-300"></i>
+            <span>Clasificar y Guardar</span>
+          </button>
+        </div>
+      </form>
+      <div id="express-feedback" class="mt-2 text-xs hidden"></div>
+    </section>
+
+    <section class="grid grid-cols-1 md:grid-cols-12 gap-6">
+
+      <!-- Card Ingreso Neto Configurable -->
+      <div class="md:col-span-5 glass-card rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
+        <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-600/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ingreso Mensual Neto</span>
+            <span class="text-xs text-indigo-400 font-medium cursor-pointer hover:underline" onclick="editIncome()">
+              <i class="fa-solid fa-pen-to-square mr-1"></i>Editar
+            </span>
+          </div>
+          <div class="flex items-baseline space-x-2">
+            <span class="text-slate-400 text-xl font-bold">$</span>
+            <input type="number" id="net-income-input" value="3000" step="50" min="0" onchange="updateDashboard()"
+                   class="bg-transparent text-3xl font-extrabold text-white focus:outline-none focus:border-b-2 focus:border-indigo-500 w-full tracking-tight">
+          </div>
+          <p class="text-xs text-slate-400 mt-2">Base sobre la cual se calculan los límites del presupuesto 50/30/20.</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-800">
+          <div>
+            <p class="text-[11px] text-slate-400">Total Gastado</p>
+            <p id="total-spent-display" class="text-lg font-bold text-white">$0</p>
+          </div>
+          <div>
+            <p class="text-[11px] text-slate-400">Saldo Libres / Restante</p>
+            <p id="total-remaining-display" class="text-lg font-bold text-emerald-400">$0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metas de Presupuesto 50/30/20 (KPI Resumen) -->
+      <div class="md:col-span-7 glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+
+        <!-- Caja Necesidades -->
+        <div class="p-3.5 rounded-xl bg-slate-900/60 border border-blue-500/20 relative">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-blue-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-house-medical text-xs"></i> 50% Necesidades
+            </span>
+            <span id="badge-nec-status" class="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">OK</span>
+          </div>
+          <div class="mt-2">
+            <p id="nec-spent-text" class="text-base font-bold text-white">$0</p>
+            <p id="nec-target-text" class="text-[11px] text-slate-400">Meta: $1,500</p>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div id="nec-bar" class="bg-blue-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Caja Gustos -->
+        <div class="p-3.5 rounded-xl bg-slate-900/60 border border-orange-500/20 relative">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-orange-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-utensils text-xs"></i> 30% Gustos
+            </span>
+            <span id="badge-gus-status" class="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">OK</span>
+          </div>
+          <div class="mt-2">
+            <p id="gus-spent-text" class="text-base font-bold text-white">$0</p>
+            <p id="gus-target-text" class="text-[11px] text-slate-400">Meta: $900</p>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div id="gus-bar" class="bg-orange-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Caja Ahorro y Deudas -->
+        <div class="p-3.5 rounded-xl bg-slate-900/60 border border-emerald-500/20 relative">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+              <i class="fa-solid fa-vault text-xs"></i> 20% Ahorro/Deudas
+            </span>
+            <span id="badge-aho-status" class="text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">OK</span>
+          </div>
+          <div class="mt-2">
+            <p id="aho-spent-text" class="text-base font-bold text-white">$0</p>
+            <p id="aho-target-text" class="text-[11px] text-slate-400">Meta: $600</p>
+          </div>
+          <div class="w-full bg-slate-800 rounded-full h-1.5 mt-2.5 overflow-hidden">
+            <div id="aho-bar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Gráfico Donut Distribución -->
+      <div class="lg:col-span-5 glass-card rounded-2xl p-5 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <h3 class="text-sm font-bold text-white">Distribución Presupuestaria</h3>
+            <p class="text-xs text-slate-400">Real Ejecutado vs. Regla Ideal 50/30/20</p>
+          </div>
+          <button onclick="toggleChartType()" class="text-xs text-indigo-400 hover:text-indigo-300">
+            <i class="fa-solid fa-rotate"></i>
+          </button>
+        </div>
+        <div class="relative w-full h-64 flex items-center justify-center">
+          <canvas id="donutChart"></canvas>
+        </div>
+        <div class="flex justify-center items-center space-x-4 text-xs mt-3 pt-3 border-t border-slate-800">
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span> Necesidades</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-orange-500 inline-block"></span> Gustos</span>
+          <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Ahorro/Deudas</span>
+        </div>
+      </div>
+
+      <!-- Estrategia de Deudas & Subcategorías Acordeón -->
+      <div class="lg:col-span-7 space-y-6 flex flex-col justify-between">
+
+        <!-- Tarjeta Estrategia Deudas -->
+        <div class="glass-card rounded-2xl p-5 bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950/40 border border-indigo-500/20">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center space-x-2">
+              <div class="p-2 rounded-lg bg-indigo-500/20 text-indigo-400">
+                <i class="fa-solid fa-fire-flame-curved"></i>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white uppercase tracking-wider">Acelerador de Libertad Financiera</h4>
+                <p class="text-[11px] text-slate-400">Análisis de Deudas (Cuotas Mínimas vs. Abonos Extra)</p>
+              </div>
+            </div>
+            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              Estrategia Activa
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-3">
+            <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+              <p class="text-[11px] text-slate-400">Cuotas Mínimas Obligatorias (Caja 50%)</p>
+              <p id="debt-minimums-text" class="text-base font-bold text-blue-400">$0.00</p>
+              <p class="text-[10px] text-slate-500 mt-1">Mantiene historial crediticio al día</p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950/60 border border-emerald-500/30">
+              <p class="text-[11px] text-slate-400">Abonos Extraordinarios (Caja 20%)</p>
+              <p id="debt-extra-text" class="text-base font-bold text-emerald-400">$0.00</p>
+              <p class="text-[10px] text-emerald-500/80 mt-1">Reduce intereses y tiempo de deuda</p>
+            </div>
+          </div>
+
+          <div class="p-3 rounded-xl bg-indigo-950/30 border border-indigo-800/40 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="text-xs text-slate-300">
+              <span class="font-semibold text-indigo-300">💡 Tip Pro:</span> Asignar un <span class="text-emerald-400 font-bold">$100 extra/mes</span> en tu caja del 20% reduce hasta en un <span class="font-bold text-white">40% el tiempo de pago</span>.
+            </div>
+            <button onclick="openModal('simulator-modal')" class="whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white transition">
+              Simular Impacto
+            </button>
+          </div>
+        </div>
+
+        <!-- Desglose por Subcategorías -->
+        <div class="glass-card rounded-2xl p-5">
+          <h3 class="text-sm font-bold text-white mb-3">Desglose por Subcategorías</h3>
+          <div class="space-y-2 text-xs" id="subcategories-accordion">
+            <!-- Carga dinámica -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="glass-card rounded-2xl p-5 space-y-4">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h3 class="text-base font-bold text-white">Registro de Transacciones</h3>
+          <p class="text-xs text-slate-400">Listado cronológico con autoclasificación inteligente</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+            <input type="text" id="search-input" onkeyup="filterExpenses()" placeholder="Buscar concepto..."
+                   class="bg-slate-900 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 w-44">
+          </div>
+          <select id="category-filter" onchange="filterExpenses()" class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+            <option value="ALL">Todas las Cajas</option>
+            <option value="Necesidades">50% Necesidades</option>
+            <option value="Gustos">30% Gustos</option>
+            <option value="Ahorro/Deudas">20% Ahorro & Deudas</option>
+          </select>
+          <button onclick="clearAllExpenses()" class="px-2.5 py-1.5 text-xs rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 transition">
+            <i class="fa-solid fa-trash-can mr-1"></i> Limpiar
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla Responsive -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs text-slate-300">
+          <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+            <tr>
+              <th class="py-3 px-4">Fecha</th>
+              <th class="py-3 px-4">Concepto / Nombre</th>
+              <th class="py-3 px-4">Caja Principal</th>
+              <th class="py-3 px-4">Subcategoría</th>
+              <th class="py-3 px-4 text-right">Monto ($)</th>
+              <th class="py-3 px-4 text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="expenses-table-body" class="divide-y divide-slate-800/60">
+            <!-- Relleno dinámico -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Modal 1: Agregar Gasto -->
+  <div id="expense-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-modal backdrop-blur-md">
+    <div class="glass-card bg-slate-900 border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-receipt text-indigo-400"></i> Registrar Gasto (Autoclasificado)
+        </h3>
+        <button onclick="closeModal('expense-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="expense-form" onsubmit="handleExpenseSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Concepto / Comercio *</label>
+          <input type="text" id="modal-concept" required placeholder="Ej: Arriendo, Mercado, Netflix, Cine Colombia..."
+                 oninput="autoClassifyConcept(this.value)"
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Monto ($) *</label>
+            <input type="number" step="0.01" min="0.01" id="modal-amount" required placeholder="0.00"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha *</label>
+            <input type="date" id="modal-date" required
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-950/80 border border-purple-500/30 rounded-xl">
+          <div class="flex items-center justify-between text-xs mb-1">
+            <span class="text-slate-400 flex items-center gap-1.5 font-medium">
+              <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i> Clasificación Automática:
+            </span>
+            <span id="auto-classified-badge" class="font-bold text-indigo-400">Necesidades</span>
+          </div>
+          <p id="auto-classified-sub" class="text-[11px] text-slate-400 italic">Subcategoría asignada: Vivienda</p>
+        </div>
+
+        <select id="modal-category" class="hidden" onchange="updateSubcategoryDropdown()">
+          <option value="Necesidades">50% Necesidades</option>
+          <option value="Gustos">30% Gustos</option>
+          <option value="Ahorro/Deudas">20% Ahorro & Deudas</option>
+        </select>
+        <select id="modal-subcategory" class="hidden"></select>
+
+        <div class="pt-3 flex items-center justify-end space-x-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal('expense-modal')" class="px-4 py-2 text-xs font-medium rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
+            Cancelar
+          </button>
+          <button type="submit" class="px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/30 transition">
+            Guardar Gasto
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Loading Modal para IA -->
+  <div id="ai-loading-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-modal backdrop-blur-md">
+    <div class="glass-card bg-slate-900 border-purple-500/40 rounded-2xl p-6 text-center max-w-sm w-full space-y-4 shadow-2xl">
+      <div class="w-16 h-16 mx-auto rounded-full bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 text-2xl animate-spin">
+        <i class="fa-solid fa-circle-notch"></i>
+      </div>
+      <div>
+        <h4 class="text-base font-bold text-white mb-1">Analizando Documento / Audio con IA</h4>
+        <p id="ai-loading-status" class="text-xs text-slate-400">Extrayendo concepto, monto y clasificado 50/30/20...</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Simulador de Deuda -->
+  <div id="simulator-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-modal backdrop-blur-md">
+    <div class="glass-card bg-slate-900 border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-calculator text-emerald-400"></i> Simulador Acelerador de Deuda
+        </h3>
+        <button onclick="closeModal('simulator-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Saldo Total de Deuda Actual ($)</label>
+          <input type="number" id="sim-debt" value="5000" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Tasa Interés Anual (%)</label>
+            <input type="number" id="sim-rate" value="24" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Cuota Mínima Actual ($)</label>
+            <input type="number" id="sim-min" value="150" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-emerald-400 mb-1">Abono Extra Mensual Sugerido (Caja 20%) ($)</label>
+          <input type="number" id="sim-extra" value="100" class="w-full bg-slate-950 border border-emerald-800/60 rounded-xl px-3 py-2 text-emerald-300 font-bold">
+        </div>
+
+        <button onclick="runDebtSimulation()" class="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition">
+          Calcular Ahorro de Tiempo e Intereses
+        </button>
+
+        <div id="sim-results" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hidden space-y-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Sheets -->
+  <div id="sheets-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-modal backdrop-blur-md">
+    <div class="glass-card bg-slate-900 border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-table text-emerald-400"></i> Sincronización Google Sheets
+        </h3>
+        <button onclick="closeModal('sheets-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-300">
+        <p>Puedes conectar tus datos con tu Google Sheet personal en 2 simples pasos:</p>
+
+        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+          <p class="font-semibold text-emerald-400 mb-1">Paso 1: Copiar Estructura CSV / Formato</p>
+          <p class="text-slate-400 mb-2">Copia el encabezado estructurado para pegarlo directamente en la fila 1 de tu hoja de cálculo Google Sheets:</p>
+          <div class="flex items-center space-x-2">
+            <input type="text" readonly value="Fecha,Concepto,Caja_50_30_20,Subcategoria,Monto" class="w-full bg-slate-900 border border-slate-800 rounded px-2 py-1 text-[11px] font-mono text-slate-300">
+            <button onclick="copySheetsHeader()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded">Copiar</button>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+          <p class="font-semibold text-emerald-400 mb-1">Paso 2: Exportar Datos Actuales</p>
+          <p class="text-slate-400">Descarga tu archivo `.csv` sincronizado con todas tus transacciones de la regla 50/30/20.</p>
+          <button onclick="exportToCSV()" class="mt-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-semibold transition">
+            Descargar CSV
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 4: Configuración del Cerebro de IA (Gemini API Key) -->
+  <div id="ai-config-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-modal backdrop-blur-md">
+    <div class="glass-card bg-slate-900 border-purple-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-brain text-purple-400"></i> Cerebro de IA (Google Gemini)
+        </h3>
+        <button onclick="closeModal('ai-config-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-xs text-slate-300">
+        <p class="text-slate-400">
+          Pega tu API key de Google Gemini para activar la clasificación inteligente, la lectura de facturas y las notas de voz.
+          <span class="block mt-1">🔒 Es <b>gratis</b> en <a href="https://aistudio.google.com/apikey" target="_blank" class="text-purple-300 underline">aistudio.google.com/apikey</a>. La key se usa solo desde tu navegador; no se envía a ningún servidor nuestro.</span>
+        </p>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">API Key de Gemini</label>
+          <div class="relative">
+            <input type="password" id="gemini-key-input" placeholder="AIza..." autocomplete="off"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 pr-10 text-xs text-white focus:outline-none focus:border-purple-500">
+            <button type="button" onclick="toggleKeyVisibility()" id="key-eye-btn" title="Mostrar/ocultar" class="absolute right-3 top-2.5 text-slate-400 hover:text-white">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <label class="flex items-center gap-2 cursor-pointer text-slate-300">
+          <input type="checkbox" id="remember-key-check" checked class="rounded bg-slate-950 border-slate-700 text-purple-500 focus:ring-purple-500">
+          <span>Recordar la key en este navegador</span>
+        </label>
+
+        <div id="gemini-key-status" class="hidden text-[11px]"></div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <button type="button" onclick="clearGeminiKey()" class="px-3 py-2 text-xs font-medium rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">
+            Borrar key
+          </button>
+          <button type="button" onclick="saveGeminiKey()" class="px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-purple-600/30 transition">
+            Guardar y activar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botón Flotante para Móvil / Tablet (FAB de Voz) -->
+  <div class="fixed bottom-5 right-5 z-40 sm:hidden flex flex-col gap-2">
+    <button onclick="toggleVoiceDictation()" id="voice-fab-btn" title="Comando de Voz Rápido"
+            class="w-14 h-14 rounded-full bg-gradient-to-r from-rose-600 to-pink-600 text-white flex items-center justify-center shadow-2xl shadow-rose-600/50 border border-rose-400/30 text-xl transition active:scale-90">
+      <i class="fa-solid fa-microphone"></i>
+    </button>
+  </div>
+
+  <script>
+    /* DICCIONARIO DE REGLAS DE CLASIFICACIÓN AUTOMÁTICA POR PALABRAS CLAVE */
+    const AUTO_RULES = [
+      // Necesidades (50%)
+      { keywords: ['arriendo', 'renta', 'hipoteca', 'alquiler', 'casa', 'departamento', 'habitacion'], category: 'Necesidades', subcategory: 'Vivienda' },
+      { keywords: ['luz', 'agua', 'gas', 'internet', 'claro', 'movistar', 'tigo', 'servicios', 'electricidad', 'wifi', 'telefono', 'acueducto'], category: 'Necesidades', subcategory: 'Servicios Públicos' },
+      { keywords: ['mercado', 'supermercado', 'éxito', 'exito', 'jumbo', 'carulla', 'd1', 'ara', 'olimpica', 'comida basica', 'farmacia', 'drogueria', 'remedios', 'salud', 'doctor', 'medico'], category: 'Necesidades', subcategory: 'Mercado y Salud' },
+      { keywords: ['gasolina', 'transporte', 'bus', 'metro', 'uber trabajo', 'peaje', 'mantenimiento carro', 'taxis', 'mecanico', 'terpel', 'texaco', 'biomax'], category: 'Necesidades', subcategory: 'Transporte' },
+      { keywords: ['cuota minima', 'minimo tarjeta', 'prestamo personal', 'banco cuota', 'minimo', 'visa minimo', 'mastercard minimo'], category: 'Necesidades', subcategory: 'Cuotas Mínimas Deuda' },
+
+      // Gustos (30%)
+      { keywords: ['restaurante', 'mcdonalds', 'kfc', 'starbucks', 'cafe', 'bar', 'cerveza', 'domicilio', 'rappi', 'cena', 'almuerzo fuera', 'sushi', 'pizza', 'hamburguesa', 'crepes', 'cine', 'cine colombia', 'cinemark', 'procinal'], category: 'Gustos', subcategory: 'Salidas y Gastronomía' },
+      { keywords: ['netflix', 'spotify', 'concierto', 'steam', 'playstation', 'disney', 'prime', 'hbo', 'youtube', 'boleta', 'evento'], category: 'Gustos', subcategory: 'Entretenimiento y Ocio' },
+      { keywords: ['zapatos', 'ropa', 'zara', 'h&m', 'peluqueria', 'spa', 'barberia', 'tenis', 'estetica', 'maquillaje', 'perfume'], category: 'Gustos', subcategory: 'Ropa y Cuidado Personal' },
+      { keywords: ['vuelo', 'hotel', 'airbnb', 'viaje', 'tiquetes', 'vacaciones', 'turismo', 'pasaje avion'], category: 'Gustos', subcategory: 'Viajes y Turismo' },
+
+      // Ahorro y Deudas (20%)
+      { keywords: ['abono extra', 'abono capital', 'extra tarjeta', 'pago extra deuda', 'acelerador', 'amortizacion'], category: 'Ahorro/Deudas', subcategory: 'Abono Extra Deudas' },
+      { keywords: ['fondo emergencia', 'colchón', 'reserva', 'imprevistos'], category: 'Ahorro/Deudas', subcategory: 'Fondo de Emergencia' },
+      { keywords: ['inversion', 'cdt', 'fiducooperativa', 'ahorro retiro', 'meta', 'inversiones', 'acciones', 'cripto', 'ahorro futuro'], category: 'Ahorro/Deudas', subcategory: 'Metas de Ahorro' }
+    ];
+
+    const SUBCATEGORIES = {
+      'Necesidades': ['Vivienda', 'Servicios Públicos', 'Mercado y Salud', 'Transporte', 'Cuotas Mínimas Deuda'],
+      'Gustos': ['Salidas y Gastronomía', 'Entretenimiento y Ocio', 'Ropa y Cuidado Personal', 'Viajes y Turismo', 'Antojos y Varios'],
+      'Ahorro/Deudas': ['Fondo de Emergencia', 'Abono Extra Deudas', 'Metas de Ahorro']
+    };
+
+    let state = {
+      netIncome: 3000,
+      expenses: [
+        { id: '1', date: '2026-07-01', concept: 'Arriendo Apartamento', category: 'Necesidades', subcategory: 'Vivienda', amount: 950 },
+        { id: '2', date: '2026-07-03', concept: 'Mercado Principal D1', category: 'Necesidades', subcategory: 'Mercado y Salud', amount: 320 },
+        { id: '3', date: '2026-07-05', concept: 'Servicios Agua y Luz', category: 'Necesidades', subcategory: 'Servicios Públicos', amount: 110 },
+        { id: '4', date: '2026-07-06', concept: 'Cuota Mínima Tarjeta Crédito', category: 'Necesidades', subcategory: 'Cuotas Mínimas Deuda', amount: 120 },
+        { id: '5', date: '2026-07-08', concept: 'Cena Restaurante con amigos', category: 'Gustos', subcategory: 'Salidas y Gastronomía', amount: 85 },
+        { id: '6', date: '2026-07-10', concept: 'Suscripción Netflix & Spotify', category: 'Gustos', subcategory: 'Entretenimiento y Ocio', amount: 25 },
+        { id: '7', date: '2026-07-12', concept: 'Compras Ropa de Temporada', category: 'Gustos', subcategory: 'Ropa y Cuidado Personal', amount: 140 },
+        { id: '8', date: '2026-07-15', concept: 'Abono Extraordinario a Capital Deuda', category: 'Ahorro/Deudas', subcategory: 'Abono Extra Deudas', amount: 300 },
+        { id: '9', date: '2026-07-18', concept: 'Aporte Colchón Emergencia', category: 'Ahorro/Deudas', subcategory: 'Fondo de Emergencia', amount: 200 }
+      ]
+    };
+
+    let chartInstance = null;
+    let isPieChart = false;
+
+    /* =========================================================
+       CONFIGURACIÓN GOOGLE (login + Drive) Y CEREBRO GEMINI
+       ========================================================= */
+    // ⚠️ Reemplaza este valor por tu Client ID de Google Cloud (lo montamos juntos).
+    const GOOGLE_CLIENT_ID = "67342853215-dk7fil4vt56f80ggk7ff7750m60drbnd.apps.googleusercontent.com";
+    const DRIVE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+    const OAUTH_SCOPES = "openid email profile " + DRIVE_SCOPE;
+    const DRIVE_FILENAME = "SmartBalance-MisFinanzas.json";
+    const GEMINI_MODEL = "gemini-2.5-flash";
+
+    let googleAccessToken = null;
+    let googleUser = null;      // { name, email, picture }
+    let driveFileId = null;
+    let tokenClient = null;
+    let appReady = false;       // evita autoguardar durante la carga inicial
+    let isLoadingFromDrive = false;
+    let driveSaveTimer = null;
+
+    // API key de Gemini (persistida opcionalmente en el navegador, como el Super Prompt)
+    let geminiApiKey = localStorage.getItem('sb_gemini_key') || '';
+
+    /* ---------- GESTIÓN DE LA API KEY DE GEMINI ---------- */
+    function saveGeminiKey() {
+      const input = document.getElementById('gemini-key-input');
+      const remember = document.getElementById('remember-key-check');
+      const statusEl = document.getElementById('gemini-key-status');
+      const val = (input.value || '').trim();
+
+      if (!val) {
+        showKeyStatus('Ingresa una API key válida.', false);
+        return;
+      }
+      geminiApiKey = val;
+      if (remember && remember.checked) {
+        localStorage.setItem('sb_gemini_key', val);
+      } else {
+        localStorage.removeItem('sb_gemini_key');
+      }
+      showKeyStatus('✅ Cerebro de IA activado. Ya puedes clasificar por texto, voz y facturas.', true);
+      updateAIConfigButton();
+      setTimeout(() => closeModal('ai-config-modal'), 1200);
+    }
+
+    function clearGeminiKey() {
+      geminiApiKey = '';
+      localStorage.removeItem('sb_gemini_key');
+      const input = document.getElementById('gemini-key-input');
+      if (input) input.value = '';
+      showKeyStatus('Key borrada. La clasificación funcionará solo con reglas por palabras clave.', true);
+      updateAIConfigButton();
+    }
+
+    function showKeyStatus(msg, ok) {
+      const statusEl = document.getElementById('gemini-key-status');
+      if (!statusEl) return;
+      statusEl.textContent = msg;
+      statusEl.className = ok
+        ? 'text-[11px] text-emerald-400'
+        : 'text-[11px] text-rose-400';
+      statusEl.classList.remove('hidden');
+    }
+
+    function toggleKeyVisibility() {
+      const input = document.getElementById('gemini-key-input');
+      const icon = document.querySelector('#key-eye-btn i');
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) icon.className = 'fa-solid fa-eye-slash';
+      } else {
+        input.type = 'password';
+        if (icon) icon.className = 'fa-solid fa-eye';
+      }
+    }
+
+    function updateAIConfigButton() {
+      const btn = document.getElementById('ai-config-btn');
+      if (!btn) return;
+      const label = btn.querySelector('span');
+      if (geminiApiKey) {
+        btn.classList.add('border-emerald-600/50');
+        if (label) label.textContent = 'IA activa';
+      } else {
+        btn.classList.remove('border-emerald-600/50');
+        if (label) label.textContent = 'Cerebro IA';
+      }
+    }
+
+    function requireGeminiKey() {
+      if (!geminiApiKey) {
+        const err = new Error('NO_KEY');
+        err.code = 'NO_KEY';
+        throw err;
+      }
+    }
+
+    /* ---------- LOGIN CON GOOGLE (Google Identity Services) ---------- */
+    function initGoogleWhenReady(attempt) {
+      attempt = attempt || 0;
+      if (window.google && google.accounts && google.accounts.oauth2) {
+        try {
+          tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GOOGLE_CLIENT_ID,
+            scope: OAUTH_SCOPES,
+            callback: async (resp) => {
+              if (resp.error) {
+                console.error('Error de login Google:', resp);
+                setSyncStatus('Error al iniciar sesión', 'error');
+                return;
+              }
+              googleAccessToken = resp.access_token;
+              setSyncStatus('Conectando con tu Drive...', 'sync');
+              try {
+                await fetchUserProfile();
+                await loadFromDrive();
+                setSyncStatus('Sincronizado con tu Drive', 'ok');
+              } catch (e) {
+                console.error(e);
+                setSyncStatus('Conectado (sin datos previos)', 'ok');
+              }
+              renderAuthUI();
+            }
+          });
+        } catch (e) {
+          console.error('No se pudo inicializar Google Auth:', e);
+        }
+        renderAuthUI();
+      } else if (attempt < 40) {
+        setTimeout(() => initGoogleWhenReady(attempt + 1), 250);
+      } else {
+        renderAuthUI(); // mostrará el botón; al hacer clic avisará si no cargó
+      }
+    }
+
+    function signInWithGoogle() {
+      if (GOOGLE_CLIENT_ID.startsWith('PON_AQUI')) {
+        alert("Aún falta configurar el Client ID de Google.\n\nEste paso lo montamos juntos: crear el proyecto en Google Cloud y pegar aquí el Client ID. Mientras tanto, la app funciona guardando en este navegador.");
+        return;
+      }
+      if (!tokenClient) {
+        alert("El servicio de Google todavía se está cargando. Intenta de nuevo en un momento.");
+        initGoogleWhenReady();
+        return;
+      }
+      // prompt: 'consent' la primera vez asegura que pida el permiso de Drive
+      tokenClient.requestAccessToken({ prompt: googleUser ? '' : 'consent' });
+    }
+
+    function signOutGoogle() {
+      if (googleAccessToken && window.google && google.accounts && google.accounts.oauth2) {
+        try { google.accounts.oauth2.revoke(googleAccessToken, () => {}); } catch (e) {}
+      }
+      googleAccessToken = null;
+      googleUser = null;
+      driveFileId = null;
+      setSyncStatus('', 'idle');
+      renderAuthUI();
+    }
+
+    async function fetchUserProfile() {
+      const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: { Authorization: 'Bearer ' + googleAccessToken }
+      });
+      if (r.ok) {
+        googleUser = await r.json();
+      }
+    }
+
+    function renderAuthUI() {
+      const area = document.getElementById('google-auth-area');
+      if (!area) return;
+
+      if (googleUser) {
+        const pic = googleUser.picture
+          ? `<img src="${googleUser.picture}" alt="" class="w-7 h-7 rounded-full border border-slate-700">`
+          : `<div class="w-7 h-7 rounded-full bg-indigo-600 flex items-center justify-center text-[10px] font-bold text-white">${(googleUser.name || 'U').slice(0,1).toUpperCase()}</div>`;
+        area.innerHTML = `
+          <div class="flex items-center gap-2">
+            <div id="sync-status" class="hidden sm:flex items-center gap-1 text-[10px] px-2 py-1 rounded-lg bg-slate-800/70 border border-slate-700 text-slate-300"></div>
+            <div class="flex items-center gap-2 pl-1">
+              ${pic}
+              <div class="hidden md:block leading-tight">
+                <p class="text-[11px] font-semibold text-white max-w-[120px] truncate">${escapeHtml(googleUser.name || '')}</p>
+                <p class="text-[9px] text-slate-400 max-w-[120px] truncate">${escapeHtml(googleUser.email || '')}</p>
+              </div>
+              <button onclick="signOutGoogle()" title="Cerrar sesión" class="text-slate-400 hover:text-rose-400 px-1">
+                <i class="fa-solid fa-right-from-bracket text-sm"></i>
+              </button>
+            </div>
+          </div>`;
+      } else {
+        area.innerHTML = `
+          <button onclick="signInWithGoogle()" title="Guarda tus datos en tu Google Drive" class="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 shadow transition transform active:scale-95">
+            <svg width="14" height="14" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            <span class="hidden sm:inline">Entrar con Google</span>
+            <span class="sm:hidden">Google</span>
+          </button>`;
+      }
+      updateSyncStatusUI();
+    }
+
+    let _syncStatus = { text: '', type: 'idle' };
+    function setSyncStatus(text, type) {
+      _syncStatus = { text, type };
+      updateSyncStatusUI();
+    }
+    function updateSyncStatusUI() {
+      const el = document.getElementById('sync-status');
+      if (!el) return;
+      if (!_syncStatus.text) { el.classList.add('hidden'); return; }
+      el.classList.remove('hidden');
+      let icon = '<i class="fa-solid fa-cloud text-slate-400"></i>';
+      if (_syncStatus.type === 'sync') icon = '<i class="fa-solid fa-arrows-rotate fa-spin text-indigo-400"></i>';
+      if (_syncStatus.type === 'ok') icon = '<i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i>';
+      if (_syncStatus.type === 'error') icon = '<i class="fa-solid fa-triangle-exclamation text-rose-400"></i>';
+      el.innerHTML = `${icon}<span>${escapeHtml(_syncStatus.text)}</span>`;
+    }
+
+    /* ---------- GUARDAR / CARGAR EN GOOGLE DRIVE ---------- */
+    async function loadFromDrive() {
+      if (!googleAccessToken) return;
+      isLoadingFromDrive = true;
+      try {
+        const q = encodeURIComponent(`name='${DRIVE_FILENAME}' and trashed=false`);
+        const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc`, {
+          headers: { Authorization: 'Bearer ' + googleAccessToken }
+        });
+        const list = await listRes.json();
+        if (list.files && list.files.length) {
+          driveFileId = list.files[0].id;
+          const contentRes = await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`, {
+            headers: { Authorization: 'Bearer ' + googleAccessToken }
+          });
+          const data = await contentRes.json();
+          if (data && Array.isArray(data.expenses)) {
+            state = { netIncome: data.netIncome || 0, expenses: data.expenses };
+            const incomeInput = document.getElementById('net-income-input');
+            if (incomeInput) incomeInput.value = state.netIncome;
+            updateDashboard();
+          }
+        } else {
+          driveFileId = null; // se creará en el primer guardado
+        }
+      } finally {
+        isLoadingFromDrive = false;
+      }
+    }
+
+    function scheduleDriveSave() {
+      if (!appReady || isLoadingFromDrive || !googleAccessToken) return;
+      setSyncStatus('Guardando...', 'sync');
+      clearTimeout(driveSaveTimer);
+      driveSaveTimer = setTimeout(saveToDrive, 900);
+    }
+
+    async function saveToDrive() {
+      if (!googleAccessToken) return;
+      const body = JSON.stringify(state);
+      try {
+        if (!driveFileId) {
+          const metadata = { name: DRIVE_FILENAME, mimeType: 'application/json' };
+          const boundary = 'smartbalance' + String(state.expenses.length) + 'x';
+          const multipart =
+            `--${boundary}\r\n` +
+            `Content-Type: application/json; charset=UTF-8\r\n\r\n` +
+            `${JSON.stringify(metadata)}\r\n` +
+            `--${boundary}\r\n` +
+            `Content-Type: application/json\r\n\r\n` +
+            `${body}\r\n` +
+            `--${boundary}--`;
+          const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+            method: 'POST',
+            headers: {
+              Authorization: 'Bearer ' + googleAccessToken,
+              'Content-Type': `multipart/related; boundary=${boundary}`
+            },
+            body: multipart
+          });
+          const j = await res.json();
+          driveFileId = j.id;
+        } else {
+          await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+            method: 'PATCH',
+            headers: {
+              Authorization: 'Bearer ' + googleAccessToken,
+              'Content-Type': 'application/json'
+            },
+            body: body
+          });
+        }
+        setSyncStatus('Guardado en tu Drive', 'ok');
+      } catch (e) {
+        console.error('Error guardando en Drive:', e);
+        setSyncStatus('Error al guardar', 'error');
+      }
+    }
+
+    /* RECONOCIMIENTO DE VOZ Y COMANDOS DE AUDIO (Web Speech API) */
+    let isListening = false;
+    let recognition = null;
+
+    window.onload = function() {
+      const dateInput = document.getElementById('modal-date');
+      if (dateInput) dateInput.valueAsDate = new Date();
+      updateSubcategoryDropdown();
+
+      // Precargar API key guardada en el modal de configuración
+      const keyInput = document.getElementById('gemini-key-input');
+      if (keyInput && geminiApiKey) keyInput.value = geminiApiKey;
+      updateAIConfigButton();
+
+      updateDashboard();
+
+      // Inicializar login con Google (la librería carga async)
+      initGoogleWhenReady();
+
+      appReady = true;
+    };
+
+    function toggleVoiceDictation() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        alert("Tu navegador no soporta dictado directo por micrófono. Puedes subir una nota de voz Grabada (.mp3, .m4a, .wav, .webm) con el botón 'Subir Archivo'.");
+        return;
+      }
+
+      if (isListening) {
+        if (recognition) recognition.stop();
+        return;
+      }
+
+      try {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'es-ES';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = function() {
+          isListening = true;
+          updateVoiceUI(true);
+        };
+
+        recognition.onresult = async function(event) {
+          const transcript = event.results[0][0].transcript;
+          console.log("Audio capturado por micrófono:", transcript);
+
+          const conceptInput = document.getElementById('express-concept');
+          if (conceptInput) {
+            conceptInput.value = transcript;
+          }
+
+          const numbers = transcript.match(/\d+/g);
+          if (numbers && numbers.length > 0) {
+            const amountInput = document.getElementById('express-amount');
+            if (amountInput) {
+              amountInput.value = numbers[numbers.length - 1];
+            }
+          }
+
+          showAILoading(`Procesando comando de voz: "${transcript}"...`);
+          try {
+            const aiParsed = await classifyTextWithGemini(transcript);
+            if (aiParsed) {
+              if (aiParsed.concept && conceptInput) conceptInput.value = aiParsed.concept;
+              if (aiParsed.amount) {
+                const amountInput = document.getElementById('express-amount');
+                if (amountInput) amountInput.value = aiParsed.amount;
+              }
+            }
+          } catch (e) {
+            console.log("Clasificación por reglas completada.");
+          } finally {
+            hideAILoading();
+          }
+        };
+
+        recognition.onerror = function(e) {
+          console.error("Error en micrófono:", e.error);
+          isListening = false;
+          updateVoiceUI(false);
+          alert("Ocurrió un error al escuchar el micrófono. Revisa los permisos de audio de tu dispositivo.");
+        };
+
+        recognition.onend = function() {
+          isListening = false;
+          updateVoiceUI(false);
+        };
+
+        recognition.start();
+      } catch (err) {
+        console.error("Error iniciando voz:", err);
+        isListening = false;
+        updateVoiceUI(false);
+      }
+    }
+
+    function updateVoiceUI(active) {
+      const btns = [
+        document.getElementById('voice-mic-btn'),
+        document.getElementById('voice-header-btn'),
+        document.getElementById('voice-fab-btn')
+      ];
+
+      btns.forEach(btn => {
+        if (!btn) return;
+        if (active) {
+          btn.classList.add('animate-pulse', 'ring-4', 'ring-rose-500/50');
+          btn.innerHTML = `<i class="fa-solid fa-microphone-lines text-rose-300"></i><span class="hidden md:inline">Escuchando...</span>`;
+        } else {
+          btn.classList.remove('animate-pulse', 'ring-4', 'ring-rose-500/50');
+          if (btn.id === 'voice-fab-btn') {
+            btn.innerHTML = `<i class="fa-solid fa-microphone"></i>`;
+          } else {
+            btn.innerHTML = `<i class="fa-solid fa-microphone"></i><span class="hidden md:inline">Hablar / Comando Voz</span>`;
+          }
+        }
+      });
+    }
+
+    async function processUploadedFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      showAILoading(`Analizando ${file.type.startsWith('audio/') ? 'nota de voz' : 'archivo'} con IA Gemini...`);
+
+      try {
+        let extractedExpense = null;
+
+        if (file.type.startsWith('image/')) {
+          const base64Data = await fileToBase64(file);
+          extractedExpense = await analyzeImageWithGemini(base64Data, file.type);
+        } else if (file.type.startsWith('audio/')) {
+          const base64Data = await fileToBase64(file);
+          extractedExpense = await analyzeAudioWithGemini(base64Data, file.type || 'audio/mp3');
+        } else {
+          const textContent = await readFileAsText(file);
+          extractedExpense = await classifyTextWithGemini(textContent || file.name);
+        }
+
+        if (extractedExpense && extractedExpense.concept && extractedExpense.amount) {
+          const newExpense = {
+            id: Date.now().toString(),
+            date: extractedExpense.date || new Date().toISOString().slice(0, 10),
+            concept: extractedExpense.concept,
+            category: extractedExpense.category || 'Necesidades',
+            subcategory: extractedExpense.subcategory || 'Mercado y Salud',
+            amount: parseFloat(extractedExpense.amount)
+          };
+
+          state.expenses.unshift(newExpense);
+          updateDashboard();
+          alert(`¡${file.type.startsWith('audio/') ? 'Nota de voz' : 'Factura/Archivo'} procesado con éxito!\n\nConcepto: ${newExpense.concept}\nMonto: $${newExpense.amount}\nCategoría: ${newExpense.category} (${newExpense.subcategory})`);
+        } else {
+          alert("No se pudo extraer automáticamente la información del archivo/audio. Intenta dictar por voz o verificar el archivo.");
+        }
+      } catch (error) {
+        console.error("Error al procesar archivo:", error);
+        if (error && error.code === 'NO_KEY') {
+          hideAILoading();
+          if (confirm("Para leer facturas, PDF o notas de voz con IA necesitas configurar tu API key de Gemini.\n\n¿Abrir la configuración del Cerebro de IA ahora?")) {
+            openModal('ai-config-modal');
+          }
+          event.target.value = '';
+          return;
+        }
+        alert("Ocurrió un inconveniente al leer el archivo/audio. Verifica tu API key o el archivo e intenta de nuevo.");
+      } finally {
+        hideAILoading();
+        event.target.value = '';
+      }
+    }
+
+    async function analyzeAudioWithGemini(base64Data, mimeType) {
+      requireGeminiKey();
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+
+      const prompt = "Escucha con atención esta nota de voz o mensaje de audio sobre un gasto. Extrae el concepto del gasto o comercio, el monto numérico pagado, la fecha en YYYY-MM-DD (si no se menciona usa la fecha de hoy), y clasifícalo en la regla 50/30/20 en una de las categorías exactas: 'Necesidades', 'Gustos', 'Ahorro/Deudas', y asigna la subcategoría adecuada.";
+
+      const payload = {
+        contents: [{
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: mimeType, data: base64Data } }
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              concept: { type: "STRING" },
+              amount: { type: "NUMBER" },
+              date: { type: "STRING" },
+              category: { type: "STRING", enum: ["Necesidades", "Gustos", "Ahorro/Deudas"] },
+              subcategory: { type: "STRING" }
+            },
+            required: ["concept", "amount", "category", "subcategory"]
+          }
+        }
+      };
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      return text ? JSON.parse(text) : null;
+    }
+
+    async function analyzeImageWithGemini(base64Data, mimeType) {
+      requireGeminiKey();
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+
+      const prompt = "Analiza esta imagen de factura o recibo. Extrae el nombre del comercio/concepto, el monto total pagado como número, la fecha en YYYY-MM-DD (si no se ve usa la fecha de hoy), y clasifícalo en la regla 50/30/20 en una de las categorías exactas: 'Necesidades', 'Gustos', 'Ahorro/Deudas', y asigna la subcategoría adecuada.";
+
+      const payload = {
+        contents: [{
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType: mimeType, data: base64Data } }
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              concept: { type: "STRING" },
+              amount: { type: "NUMBER" },
+              date: { type: "STRING" },
+              category: { type: "STRING", enum: ["Necesidades", "Gustos", "Ahorro/Deudas"] },
+              subcategory: { type: "STRING" }
+            },
+            required: ["concept", "amount", "category", "subcategory"]
+          }
+        }
+      };
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      return text ? JSON.parse(text) : null;
+    }
+
+    async function classifyTextWithGemini(textDescription, amountVal = 0) {
+      requireGeminiKey();
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+
+      const prompt = `Analiza este texto o archivo de gasto: "${textDescription.slice(0, 1000)}". Opcional monto: ${amountVal}. Extrae un concepto claro, el monto (si se detecta), y clasifícalo en la regla 50/30/20 ('Necesidades', 'Gustos' o 'Ahorro/Deudas') y subcategoría apropiada.`;
+
+      const payload = {
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              concept: { type: "STRING" },
+              amount: { type: "NUMBER" },
+              date: { type: "STRING" },
+              category: { type: "STRING", enum: ["Necesidades", "Gustos", "Ahorro/Deudas"] },
+              subcategory: { type: "STRING" }
+            },
+            required: ["concept", "category", "subcategory"]
+          }
+        }
+      };
+
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      return text ? JSON.parse(text) : null;
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function readFileAsText(file) {
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => resolve(file.name);
+        reader.readAsText(file);
+      });
+    }
+
+    function showAILoading(msg) {
+      document.getElementById('ai-loading-status').textContent = msg || "Procesando...";
+      document.getElementById('ai-loading-modal').classList.remove('hidden');
+    }
+
+    function hideAILoading() {
+      document.getElementById('ai-loading-modal').classList.add('hidden');
+    }
+
+    function updateDashboard() {
+      const netIncomeInput = document.getElementById('net-income-input');
+      if (netIncomeInput) {
+        state.netIncome = parseFloat(netIncomeInput.value) || 0;
+      }
+
+      let spentNec = 0;
+      let spentGus = 0;
+      let spentAho = 0;
+      let debtMin = 0;
+      let debtExtra = 0;
+
+      state.expenses.forEach(e => {
+        const amt = parseFloat(e.amount) || 0;
+        if (e.category === 'Necesidades') {
+          spentNec += amt;
+          if (e.subcategory === 'Cuotas Mínimas Deuda') debtMin += amt;
+        } else if (e.category === 'Gustos') {
+          spentGus += amt;
+        } else if (e.category === 'Ahorro/Deudas') {
+          spentAho += amt;
+          if (e.subcategory === 'Abono Extra Deudas') debtExtra += amt;
+        }
+      });
+
+      const totalSpent = spentNec + spentGus + spentAho;
+      const totalRemaining = state.netIncome - totalSpent;
+
+      const totalSpentEl = document.getElementById('total-spent-display');
+      if (totalSpentEl) totalSpentEl.textContent = formatMoney(totalSpent);
+
+      const totalRemEl = document.getElementById('total-remaining-display');
+      if (totalRemEl) {
+        totalRemEl.textContent = formatMoney(totalRemaining);
+        totalRemEl.className = totalRemaining < 0 ? 'text-lg font-bold text-rose-400' : 'text-lg font-bold text-emerald-400';
+      }
+
+      const targetNec = state.netIncome * 0.50;
+      const targetGus = state.netIncome * 0.30;
+      const targetAho = state.netIncome * 0.20;
+
+      updateBoxKPI('nec', spentNec, targetNec);
+      updateBoxKPI('gus', spentGus, targetGus);
+      updateBoxKPI('aho', spentAho, targetAho);
+
+      const debtMinEl = document.getElementById('debt-minimums-text');
+      if (debtMinEl) debtMinEl.textContent = formatMoney(debtMin);
+      const debtExtraEl = document.getElementById('debt-extra-text');
+      if (debtExtraEl) debtExtraEl.textContent = formatMoney(debtExtra);
+
+      renderDonutChart(spentNec, spentGus, spentAho, targetNec, targetGus, targetAho);
+      renderSubcategoriesBreakdown(spentNec, spentGus, spentAho);
+      filterExpenses();
+
+      // Autoguardado en Google Drive (si el usuario inició sesión)
+      scheduleDriveSave();
+    }
+
+    function editIncome() {
+      const input = document.getElementById('net-income-input');
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+
+    function toggleChartType() {
+      isPieChart = !isPieChart;
+      updateDashboard();
+    }
+
+    function autoClassifyConcept(text) {
+      const query = (text || '').toLowerCase().trim();
+      let match = null;
+
+      for (const rule of AUTO_RULES) {
+        if (rule.keywords.some(k => query.includes(k))) {
+          match = rule;
+          break;
+        }
+      }
+
+      if (!match) {
+        match = { category: 'Gustos', subcategory: 'Antojos y Varios' };
+      }
+
+      const catSelect = document.getElementById('modal-category');
+      const subSelect = document.getElementById('modal-subcategory');
+      const badge = document.getElementById('auto-classified-badge');
+      const subText = document.getElementById('auto-classified-sub');
+
+      if (catSelect && subSelect) {
+        catSelect.value = match.category;
+        updateSubcategoryDropdown();
+        subSelect.value = match.subcategory;
+      }
+
+      if (badge) {
+        badge.textContent = match.category;
+        badge.className = match.category === 'Necesidades' ? 'font-bold text-blue-400' :
+                          match.category === 'Gustos' ? 'font-bold text-orange-400' : 'font-bold text-emerald-400';
+      }
+      if (subText) {
+        subText.textContent = `Subcategoría asignada: ${match.subcategory}`;
+      }
+
+      return match;
+    }
+
+    async function handleExpressExpenseSubmit(event) {
+      event.preventDefault();
+      const conceptInput = document.getElementById('express-concept');
+      const amountInput = document.getElementById('express-amount');
+      const feedback = document.getElementById('express-feedback');
+      const submitBtn = event.target.querySelector('button[type="submit"]');
+
+      const concept = conceptInput.value.trim();
+      const amount = parseFloat(amountInput.value);
+
+      if (!concept || isNaN(amount) || amount <= 0) return;
+
+      const origBtnHTML = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> <span>Clasificando...</span>`;
+      }
+
+      let classification = autoClassifyConcept(concept);
+
+      try {
+        const aiResult = await classifyTextWithGemini(concept, amount);
+        if (aiResult && aiResult.category) {
+          classification = aiResult;
+        }
+      } catch (e) {
+        console.log("Uso de clasificación por reglas locales rápidas");
+      }
+
+      const newExpense = {
+        id: Date.now().toString(),
+        date: new Date().toISOString().slice(0, 10),
+        concept: concept,
+        category: classification.category || 'Gustos',
+        subcategory: classification.subcategory || 'Antojos y Varios',
+        amount: amount
+      };
+
+      state.expenses.unshift(newExpense);
+      updateDashboard();
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnHTML;
+      }
+
+      if (feedback) {
+        feedback.innerHTML = `
+          <div class="p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-between shadow-lg">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+              <span>¡Gasto registrado! <b>$${amount.toLocaleString('en-US', {minimumFractionDigits: 2})}</b> ("${escapeHtml(concept)}") clasificado en <b class="underline">${classification.category}</b> &rarr; <i>${classification.subcategory}</i></span>
+            </div>
+            <button onclick="document.getElementById('express-feedback').classList.add('hidden')" class="text-emerald-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+          </div>`;
+        feedback.classList.remove('hidden');
+      }
+
+      conceptInput.value = '';
+      amountInput.value = '';
+
+      setTimeout(() => {
+        if (feedback) feedback.classList.add('hidden');
+      }, 6000);
+    }
+
+    function updateBoxKPI(prefix, spent, target) {
+      const spentEl = document.getElementById(`${prefix}-spent-text`);
+      const targetEl = document.getElementById(`${prefix}-target-text`);
+      if (spentEl) spentEl.textContent = formatMoney(spent);
+      if (targetEl) targetEl.textContent = `Meta: ${formatMoney(target)}`;
+
+      const pct = target > 0 ? Math.min(Math.round((spent / target) * 100), 100) : 0;
+      const bar = document.getElementById(`${prefix}-bar`);
+      if (bar) bar.style.width = `${pct}%`;
+
+      const badge = document.getElementById(`badge-${prefix}-status`);
+      if (badge) {
+        if (spent > target) {
+          badge.textContent = 'EXCEDIDO';
+          badge.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+        } else if (spent >= target * 0.9) {
+          badge.textContent = 'ALERTA';
+          badge.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30';
+        } else {
+          badge.textContent = 'OK';
+          badge.className = 'text-[10px] px-1.5 py-0.5 rounded font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        }
+      }
+    }
+
+    function renderDonutChart(sNec, sGus, sAho, tNec, tGus, tAho) {
+      const canvas = document.getElementById('donutChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: isPieChart ? 'pie' : 'doughnut',
+        data: {
+          labels: ['Necesidades (50%)', 'Gustos (30%)', 'Ahorro/Deudas (20%)'],
+          datasets: [{
+            data: [sNec, sGus, sAho],
+            backgroundColor: ['#3b82f6', '#f97316', '#10b981'],
+            borderWidth: 2,
+            borderColor: '#0f172a',
+            hoverOffset: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const val = context.raw || 0;
+                  return ` ${context.label}: ${formatMoney(val)}`;
+                }
+              }
+            }
+          },
+          cutout: isPieChart ? '0%' : '72%'
+        }
+      });
+    }
+
+    function renderSubcategoriesBreakdown(spentNec, spentGus, spentAho) {
+      const container = document.getElementById('subcategories-accordion');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const categoriesData = [
+        { name: 'Necesidades', spent: spentNec, target: state.netIncome * 0.5, color: 'text-blue-400' },
+        { name: 'Gustos', spent: spentGus, target: state.netIncome * 0.3, color: 'text-orange-400' },
+        { name: 'Ahorro/Deudas', spent: spentAho, target: state.netIncome * 0.2, color: 'text-emerald-400' }
+      ];
+
+      categoriesData.forEach(cat => {
+        const subMap = {};
+        SUBCATEGORIES[cat.name].forEach(s => subMap[s] = 0);
+
+        state.expenses.filter(e => e.category === cat.name).forEach(e => {
+          subMap[e.subcategory] = (subMap[e.subcategory] || 0) + parseFloat(e.amount);
+        });
+
+        const catEl = document.createElement('div');
+        catEl.className = 'border border-slate-800 rounded-xl overflow-hidden bg-slate-950/40';
+
+        let subHTML = '';
+        for (const [subName, amount] of Object.entries(subMap)) {
+          const subPct = cat.spent > 0 ? Math.round((amount / cat.spent) * 100) : 0;
+          subHTML += `
+            <div class="flex items-center justify-between text-[11px] py-1 border-b border-slate-900 last:border-0 text-slate-300">
+              <span>${subName}</span>
+              <div class="flex items-center space-x-2">
+                <span class="text-slate-500">${subPct}%</span>
+                <span class="font-semibold text-white">${formatMoney(amount)}</span>
+              </div>
+            </div>
+          `;
+        }
+
+        catEl.innerHTML = `
+          <div class="p-3 cursor-pointer flex items-center justify-between hover:bg-slate-900/60" onclick="toggleSubAccordion('${cat.name}')">
+            <span class="font-bold ${cat.color}">${cat.name}</span>
+            <div class="flex items-center space-x-3">
+              <span class="text-slate-200 font-semibold">${formatMoney(cat.spent)}</span>
+              <i class="fa-solid fa-chevron-down text-slate-500 transition-transform text-xs" id="chevron-${cat.name}"></i>
+            </div>
+          </div>
+          <div id="sub-panel-${cat.name}" class="px-3 pb-3 hidden pt-1 border-t border-slate-900 bg-slate-950/80">
+            ${subHTML}
+          </div>
+        `;
+        container.appendChild(catEl);
+      });
+    }
+
+    function toggleSubAccordion(catName) {
+      const panel = document.getElementById(`sub-panel-${catName}`);
+      const chevron = document.getElementById(`chevron-${catName}`);
+      if (panel && chevron) {
+        if (panel.classList.contains('hidden')) {
+          panel.classList.remove('hidden');
+          chevron.style.transform = 'rotate(180deg)';
+        } else {
+          panel.classList.add('hidden');
+          chevron.style.transform = 'rotate(0deg)';
+        }
+      }
+    }
+
+    function updateSubcategoryDropdown() {
+      const catElem = document.getElementById('modal-category');
+      const subSelect = document.getElementById('modal-subcategory');
+      if (!catElem || !subSelect) return;
+
+      subSelect.innerHTML = '';
+      const options = SUBCATEGORIES[catElem.value] || [];
+      options.forEach(sub => {
+        const opt = document.createElement('option');
+        opt.value = sub;
+        opt.textContent = sub;
+        subSelect.appendChild(opt);
+      });
+    }
+
+    function handleExpenseSubmit(event) {
+      event.preventDefault();
+      const concept = document.getElementById('modal-concept').value.trim();
+      const amount = parseFloat(document.getElementById('modal-amount').value);
+      const date = document.getElementById('modal-date').value;
+      const category = document.getElementById('modal-category').value;
+      const subcategory = document.getElementById('modal-subcategory').value;
+
+      if (!concept || isNaN(amount) || !date) return;
+
+      const newExpense = {
+        id: Date.now().toString(),
+        date,
+        concept,
+        category,
+        subcategory,
+        amount
+      };
+
+      state.expenses.unshift(newExpense);
+      updateDashboard();
+      closeModal('expense-modal');
+
+      document.getElementById('expense-form').reset();
+      const dateElem = document.getElementById('modal-date');
+      if (dateElem) dateElem.valueAsDate = new Date();
+    }
+
+    function deleteExpense(id) {
+      state.expenses = state.expenses.filter(e => e.id !== id);
+      updateDashboard();
+    }
+
+    function clearAllExpenses() {
+      if (confirm('¿Estás seguro de que deseas borrar todas las transacciones registradas?')) {
+        state.expenses = [];
+        updateDashboard();
+      }
+    }
+
+    function filterExpenses() {
+      const searchElem = document.getElementById('search-input');
+      const catElem = document.getElementById('category-filter');
+      const tbody = document.getElementById('expenses-table-body');
+      if (!tbody) return;
+
+      const search = searchElem ? searchElem.value.toLowerCase() : '';
+      const catFilter = catElem ? catElem.value : 'ALL';
+      tbody.innerHTML = '';
+
+      const filtered = state.expenses.filter(e => {
+        const matchesSearch = e.concept.toLowerCase().includes(search) || e.subcategory.toLowerCase().includes(search);
+        const matchesCat = catFilter === 'ALL' || e.category === catFilter;
+        return matchesSearch && matchesCat;
+      });
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-6 text-center text-slate-500 italic">No se encontraron registros de gastos.</td>
+          </tr>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-900/50 transition';
+
+        let badgeClass = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+        if (item.category === 'Gustos') badgeClass = 'bg-orange-500/10 text-orange-400 border-orange-500/20';
+        if (item.category === 'Ahorro/Deudas') badgeClass = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-slate-400 font-mono">${item.date}</td>
+          <td class="py-3 px-4 font-semibold text-white">${escapeHtml(item.concept)}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full border ${badgeClass}">${item.category}</span>
+          </td>
+          <td class="py-3 px-4 text-slate-300">${item.subcategory}</td>
+          <td class="py-3 px-4 text-right font-bold text-white">${formatMoney(item.amount)}</td>
+          <td class="py-3 px-4 text-center">
+            <button onclick="deleteExpense('${item.id}')" class="text-slate-500 hover:text-rose-400 transition" title="Eliminar Gasto">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function runDebtSimulation() {
+      const debt = parseFloat(document.getElementById('sim-debt').value) || 0;
+      const rateAnual = parseFloat(document.getElementById('sim-rate').value) || 0;
+      const minPayment = parseFloat(document.getElementById('sim-min').value) || 0;
+      const extraPayment = parseFloat(document.getElementById('sim-extra').value) || 0;
+
+      if (debt <= 0 || minPayment <= 0) return;
+
+      const rMonthly = (rateAnual / 100) / 12;
+
+      let balanceMin = debt;
+      let monthsMin = 0;
+      let totalInterestMin = 0;
+
+      while (balanceMin > 0 && monthsMin < 360) {
+        const interest = balanceMin * rMonthly;
+        totalInterestMin += interest;
+        const principal = minPayment - interest;
+        if (principal <= 0) break;
+        balanceMin -= principal;
+        monthsMin++;
+      }
+
+      let balanceExtra = debt;
+      let monthsExtra = 0;
+      let totalInterestExtra = 0;
+      const totalMonthlyWithExtra = minPayment + extraPayment;
+
+      while (balanceExtra > 0 && monthsExtra < 360) {
+        const interest = balanceExtra * rMonthly;
+        totalInterestExtra += interest;
+        const principal = totalMonthlyWithExtra - interest;
+        balanceExtra -= principal;
+        monthsExtra++;
+      }
+
+      const resDiv = document.getElementById('sim-results');
+      if (resDiv) {
+        resDiv.classList.remove('hidden');
+
+        const monthsSaved = Math.max(0, monthsMin - monthsExtra);
+        const interestSaved = Math.max(0, totalInterestMin - totalInterestExtra);
+
+        resDiv.innerHTML = `
+          <div class="border-b border-slate-800 pb-2 mb-2 font-bold text-emerald-400 flex items-center justify-between">
+            <span>🚀 Resultados de la Simulación</span>
+            <span class="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded text-emerald-300">¡Ahorro Significativo!</span>
+          </div>
+          <p>• Tiempo pagando solo mínimo: <b class="text-white">${monthsMin} meses</b> (${(monthsMin/12).toFixed(1)} años)</p>
+          <p>• Tiempo con abono extra (+${formatMoney(extraPayment)}): <b class="text-emerald-400">${monthsExtra} meses</b> (${(monthsExtra/12).toFixed(1)} años)</p>
+          <div class="mt-2 p-2 bg-emerald-950/50 rounded border border-emerald-800/50 text-emerald-200">
+            ✨ <b>Impacto Financiero:</b> Te ahorras <b>${monthsSaved} meses de pagos</b> y un total de <b>${formatMoney(interestSaved)} en intereses</b>.
+          </div>
+        `;
+      }
+    }
+
+    function exportToCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Fecha,Concepto,Caja_50_30_20,Subcategoria,Monto\n";
+      state.expenses.forEach(e => {
+        csvContent += `"${e.date}","${e.concept.replace(/"/g, '""')}","${e.category}","${e.subcategory}",${e.amount}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `smartbalance_50_30_20_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function copySheetsHeader() {
+      const header = "Fecha,Concepto,Caja_50_30_20,Subcategoria,Monto";
+      navigator.clipboard ? navigator.clipboard.writeText(header) : prompt("Copia el siguiente texto:", header);
+    }
+
+    /* Utilitarios */
+    function formatMoney(amount) {
+      return '$' + parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    function openModal(modalId) {
+      const m = document.getElementById(modalId);
+      if (m) m.classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+      const m = document.getElementById(modalId);
+      if (m) m.classList.add('hidden');
+    }
+
+    function openSheetsModal() {
+      openModal('sheets-modal');
+    }
+  </script>
+</body>
+</html>
