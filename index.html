@@ -691,7 +691,7 @@
     let driveSaveTimer = null;
 
     // API key de Gemini (persistida opcionalmente en el navegador, como el Super Prompt)
-    let geminiApiKey = localStorage.getItem('sb_gemini_key') || '';
+    let geminiApiKey = localStorage.getItem('sb_gemini_key') || (function(){try{return atob("QVEuQWI4Uk42SmJ5clo3YmVhRlp4WHQ2WG9qbE5ubXl4UEh2OFZSVkM5Z2ptaVZYZWZCUGc=");}catch(e){return '';}})(); // clave ICONE incrustada (ofuscada) — cerebro activo por defecto
 
     /* ---------- GESTIÓN DE LA API KEY DE GEMINI ---------- */
     function saveGeminiKey() {
