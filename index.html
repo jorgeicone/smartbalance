@@ -706,10 +706,9 @@
     let isLoadingFromDrive = false;
     let driveSaveTimer = null;
 
-    // API key de Gemini INCRUSTADA y protegida por restricción de dominio (HTTP referrer).
-    // El alumno no la ve ni la configura; solo funciona desde el enlace autorizado.
-    const EMBEDDED_GEMINI_KEY = "PENDIENTE_KEY_RESTRINGIDA";
-    let geminiApiKey = (EMBEDDED_GEMINI_KEY && !EMBEDDED_GEMINI_KEY.startsWith("PENDIENTE")) ? EMBEDDED_GEMINI_KEY : '';
+    // API key de Gemini INCRUSTADA (ofuscada en base64) — cerebro activo por defecto.
+    // El alumno no la ve ni la configura. Seguridad: conviene restringirla por dominio (HTTP referrer) en Google Cloud.
+    let geminiApiKey = localStorage.getItem('sb_gemini_key') || (function(){try{return atob("QVEuQWI4Uk42SmJ5clo3YmVhRlp4WHQ2WG9qbE5ubXl4UEh2OFZSVkM5Z2ptaVZYZWZCUGc=");}catch(e){return '';}})(); // clave ICONE incrustada (ofuscada) — cerebro activo por defecto
 
     /* ---------- GESTIÓN DE LA API KEY DE GEMINI ---------- */
     function saveGeminiKey() {
