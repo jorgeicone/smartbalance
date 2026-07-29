@@ -111,6 +111,11 @@
 
       <!-- Acciones de Cabecera -->
       <div class="flex items-center space-x-2 sm:space-x-3">
+        <button onclick="openModal('info-modal')" title="¿Qué es y cómo funciona la regla 50/30/20?" class="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-700/60 transition transform active:scale-95">
+          <i class="fa-solid fa-circle-info"></i>
+          <span class="hidden lg:inline">¿Cómo clasificar?</span>
+        </button>
+
         <!-- Área de autenticación Google / estado de nube -->
         <div id="google-auth-area" class="flex items-center"></div>
 
@@ -237,7 +242,7 @@
       <div class="md:col-span-7 glass-card rounded-2xl p-5 grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
 
         <!-- Caja Necesidades -->
-        <div class="p-3.5 rounded-xl bg-slate-900/60 border border-blue-500/20 relative">
+        <div title="Gastos esenciales e inevitables: vivienda, servicios, mercado, salud, transporte y la cuota mínima de deudas." class="p-3.5 rounded-xl bg-slate-900/60 border border-blue-500/20 relative">
           <div class="flex items-center justify-between mb-1">
             <span class="text-xs font-semibold text-blue-400 flex items-center gap-1.5">
               <i class="fa-solid fa-house-medical text-xs"></i> 50% Necesidades
@@ -254,7 +259,7 @@
         </div>
 
         <!-- Caja Gustos -->
-        <div class="p-3.5 rounded-xl bg-slate-900/60 border border-orange-500/20 relative">
+        <div title="Estilo de vida no esencial: restaurantes, entretenimiento, suscripciones (Netflix, Meta Verified, Google One), ropa, viajes y hobbies." class="p-3.5 rounded-xl bg-slate-900/60 border border-orange-500/20 relative">
           <div class="flex items-center justify-between mb-1">
             <span class="text-xs font-semibold text-orange-400 flex items-center gap-1.5">
               <i class="fa-solid fa-utensils text-xs"></i> 30% Gustos
@@ -271,7 +276,7 @@
         </div>
 
         <!-- Caja Ahorro y Deudas -->
-        <div class="p-3.5 rounded-xl bg-slate-900/60 border border-emerald-500/20 relative">
+        <div title="Tu futuro: fondo de emergencia, ahorro para metas, inversiones y abonos EXTRA a deudas (más allá de la cuota mínima)." class="p-3.5 rounded-xl bg-slate-900/60 border border-emerald-500/20 relative">
           <div class="flex items-center justify-between mb-1">
             <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
               <i class="fa-solid fa-vault text-xs"></i> 20% Ahorro/Deudas
@@ -634,6 +639,86 @@
     </div>
   </div>
 
+  <!-- Modal 5: Guía educativa de la regla 50/30/20 -->
+  <div id="info-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-modal backdrop-blur-md">
+    <div class="glass-card bg-slate-900 border-indigo-500/30 rounded-2xl w-full max-w-2xl p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-circle-info text-indigo-400"></i> La regla 50/30/20 — Guía de clasificación
+        </h3>
+        <button onclick="closeModal('info-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <div class="space-y-5 text-xs text-slate-300 leading-relaxed">
+        <p>
+          La regla <b class="text-white">50/30/20</b> fue popularizada por la senadora <b>Elizabeth Warren</b> y <b>Amelia Warren Tyagi</b> en el libro
+          <i>All Your Worth: The Ultimate Lifetime Money Plan</i> (2005) y hoy es uno de los marcos de presupuesto personal más usados en el mundo.
+          Consiste en repartir tu <b class="text-indigo-300">ingreso NETO</b> (lo que te queda después de impuestos y deducciones) en tres grandes cajas:
+        </p>
+
+        <!-- 50% -->
+        <div class="p-4 rounded-xl bg-slate-950/60 border border-blue-500/30">
+          <p class="font-bold text-blue-400 flex items-center gap-2 mb-1"><i class="fa-solid fa-house-medical"></i> 50% · Necesidades (lo esencial)</p>
+          <p class="text-slate-400">Gastos que <b>no puedes evitar</b> sin consecuencias graves: vivienda (arriendo/hipoteca), servicios públicos (agua, luz, gas, internet, plan celular), mercado y alimentación básica, salud (EPS, medicamentos, citas), transporte necesario, educación básica, seguros indispensables y la <b class="text-blue-300">cuota mínima obligatoria</b> de tus deudas y tarjetas.</p>
+        </div>
+
+        <!-- 30% -->
+        <div class="p-4 rounded-xl bg-slate-950/60 border border-orange-500/30">
+          <p class="font-bold text-orange-400 flex items-center gap-2 mb-1"><i class="fa-solid fa-utensils"></i> 30% · Gustos (calidad de vida)</p>
+          <p class="text-slate-400">Todo lo que mejora tu vida pero <b>podrías vivir sin ello</b>: restaurantes y domicilios, entretenimiento y ocio, <b class="text-orange-300">todas las suscripciones</b> (Netflix, Spotify, Disney+, YouTube Premium, Meta Verified, X Premium, Google One, iCloud, ChatGPT, videojuegos), ropa y moda no esencial, belleza no básica, viajes, hobbies y gimnasio.</p>
+        </div>
+
+        <!-- 20% -->
+        <div class="p-4 rounded-xl bg-slate-950/60 border border-emerald-500/30">
+          <p class="font-bold text-emerald-400 flex items-center gap-2 mb-1"><i class="fa-solid fa-vault"></i> 20% · Ahorro y Deudas (tu futuro)</p>
+          <p class="text-slate-400">Construir tu libertad financiera: <b>fondo de emergencia</b> (3 a 6 meses de gastos), ahorro para metas, inversiones (CDT, fondos, acciones, pensión voluntaria) y los <b class="text-emerald-300">abonos EXTRA</b> a tus deudas (más allá de la cuota mínima), que reducen intereses y tiempo de pago.</p>
+        </div>
+
+        <!-- Reglas de oro -->
+        <div class="p-4 rounded-xl bg-indigo-950/30 border border-indigo-700/50">
+          <p class="font-bold text-indigo-300 mb-2">🔑 Reglas de oro para clasificar bien</p>
+          <ul class="space-y-1.5 text-slate-300 list-disc list-inside">
+            <li>Si <b>puedes vivir sin eso</b>, es un <b class="text-orange-400">Gusto</b>, no una Necesidad.</li>
+            <li>La <b>cuota mínima</b> de una deuda es <b class="text-blue-400">Necesidad (50%)</b>; el <b>abono extra</b> voluntario es <b class="text-emerald-400">Ahorro/Deudas (20%)</b>.</li>
+            <li>Las <b>suscripciones</b> de ocio o digitales son <b class="text-orange-400">Gustos</b>, aunque sean mensuales y económicas.</li>
+            <li>Ojo con los nombres: <b>“Meta Verified”, “Google One”, “iCloud”</b> son suscripciones (Gustos), <b>no</b> “metas de ahorro”.</li>
+            <li>El mismo concepto puede cambiar de caja: el <b>mercado</b> es Necesidad, pero salir a <b>restaurante</b> es Gusto.</li>
+          </ul>
+        </div>
+
+        <!-- Ejemplos rápidos -->
+        <div>
+          <p class="font-bold text-white mb-2">Ejemplos que suelen confundir</p>
+          <div class="overflow-hidden rounded-xl border border-slate-800">
+            <table class="w-full text-[11px]">
+              <thead class="bg-slate-900/80 text-slate-400">
+                <tr><th class="text-left py-2 px-3">Gasto</th><th class="text-left py-2 px-3">Caja correcta</th></tr>
+              </thead>
+              <tbody class="divide-y divide-slate-800/70 text-slate-300">
+                <tr><td class="py-1.5 px-3">Meta Verified / X Premium</td><td class="py-1.5 px-3 text-orange-400 font-semibold">30% Gustos (suscripción)</td></tr>
+                <tr><td class="py-1.5 px-3">Google One / iCloud (personal)</td><td class="py-1.5 px-3 text-orange-400 font-semibold">30% Gustos (suscripción)</td></tr>
+                <tr><td class="py-1.5 px-3">Cuota mínima de la tarjeta</td><td class="py-1.5 px-3 text-blue-400 font-semibold">50% Necesidades</td></tr>
+                <tr><td class="py-1.5 px-3">Abono extra a la tarjeta</td><td class="py-1.5 px-3 text-emerald-400 font-semibold">20% Ahorro/Deudas</td></tr>
+                <tr><td class="py-1.5 px-3">Internet / plan de datos del hogar</td><td class="py-1.5 px-3 text-blue-400 font-semibold">50% Necesidades</td></tr>
+                <tr><td class="py-1.5 px-3">CDT, fondo, acciones, pensión voluntaria</td><td class="py-1.5 px-3 text-emerald-400 font-semibold">20% Ahorro/Deudas</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-500 italic border-t border-slate-800 pt-3">
+          La 50/30/20 es una guía flexible, no una ley: si tus necesidades superan el 50% (común con ingresos bajos), ajústala y usa la estructura para tomar mejores decisiones. Lo importante es que primero cubras lo esencial, controles los gustos y siempre destines algo a ahorro y a reducir deudas.
+        </p>
+
+        <div class="flex justify-end pt-1">
+          <button onclick="closeModal('info-modal')" class="px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white shadow-lg shadow-indigo-600/30 transition">Entendido</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Botón Flotante para Móvil / Tablet (FAB de Voz) -->
   <div class="fixed bottom-5 right-5 z-40 sm:hidden flex flex-col gap-2">
     <button onclick="toggleVoiceDictation()" id="voice-fab-btn" title="Comando de Voz Rápido"
@@ -644,31 +729,63 @@
 
   <script>
     /* DICCIONARIO DE REGLAS DE CLASIFICACIÓN AUTOMÁTICA POR PALABRAS CLAVE */
+    /* ================================================================
+       MOTOR DE CLASIFICACIÓN 50/30/20 — regla de Warren & Tyagi (All Your Worth, 2005),
+       calculada sobre el INGRESO NETO.
+       · 50% NECESIDADES: gastos esenciales e inevitables + CUOTA MÍNIMA de deudas.
+       · 30% GUSTOS: estilo de vida NO esencial, incluidas TODAS las suscripciones de ocio.
+       · 20% AHORRO/DEUDAS: ahorro, inversión, fondo de emergencia y ABONOS EXTRA a deudas.
+       Regla de oro: si puedes vivir sin eso, es Gusto. Cuota mínima = Necesidad; abono extra = 20%.
+       Orden: Ahorro → Necesidades → Gustos; gana la 1ª coincidencia por palabra completa.
+       ================================================================ */
     const AUTO_RULES = [
-      // Necesidades (50%)
-      { keywords: ['arriendo', 'renta', 'hipoteca', 'alquiler', 'casa', 'departamento', 'habitacion'], category: 'Necesidades', subcategory: 'Vivienda' },
-      { keywords: ['luz', 'agua', 'gas', 'internet', 'claro', 'movistar', 'tigo', 'servicios', 'electricidad', 'wifi', 'telefono', 'acueducto'], category: 'Necesidades', subcategory: 'Servicios Públicos' },
-      { keywords: ['mercado', 'supermercado', 'éxito', 'exito', 'jumbo', 'carulla', 'd1', 'ara', 'olimpica', 'comida basica', 'farmacia', 'drogueria', 'remedios', 'salud', 'doctor', 'medico'], category: 'Necesidades', subcategory: 'Mercado y Salud' },
-      { keywords: ['gasolina', 'transporte', 'bus', 'metro', 'uber trabajo', 'peaje', 'mantenimiento carro', 'taxis', 'mecanico', 'terpel', 'texaco', 'biomax'], category: 'Necesidades', subcategory: 'Transporte' },
-      { keywords: ['cuota minima', 'minimo tarjeta', 'prestamo personal', 'banco cuota', 'minimo', 'visa minimo', 'mastercard minimo'], category: 'Necesidades', subcategory: 'Cuotas Mínimas Deuda' },
+      // ---- 20% AHORRO Y DEUDAS ----
+      { keywords: ['abono extra','abono a capital','abono capital','pago extra','extra a la deuda','extra tarjeta','amortizacion extra','acelerador de deuda','prepago deuda','abono deuda'], category:'Ahorro/Deudas', subcategory:'Abono Extra Deudas' },
+      { keywords: ['fondo de emergencia','fondo emergencia','colchon','colchon financiero','reserva','imprevistos','ahorro de emergencia'], category:'Ahorro/Deudas', subcategory:'Fondo de Emergencia' },
+      { keywords: ['ahorro','ahorros','meta de ahorro','meta ahorro','inversion','inversiones','cdt','fic','fondo de inversion','fiducuenta','fiducooperativa','pension voluntaria','afp','acciones','bonos','cripto','bitcoin','ethereum','trii','tyba','ahorro futuro','ahorro programado'], category:'Ahorro/Deudas', subcategory:'Metas de Ahorro' },
 
-      // Gustos (30%)
-      { keywords: ['restaurante', 'mcdonalds', 'kfc', 'starbucks', 'cafe', 'bar', 'cerveza', 'domicilio', 'rappi', 'cena', 'almuerzo fuera', 'sushi', 'pizza', 'hamburguesa', 'crepes', 'cine', 'cine colombia', 'cinemark', 'procinal'], category: 'Gustos', subcategory: 'Salidas y Gastronomía' },
-      { keywords: ['netflix', 'spotify', 'concierto', 'steam', 'playstation', 'disney', 'prime', 'hbo', 'youtube', 'boleta', 'evento'], category: 'Gustos', subcategory: 'Entretenimiento y Ocio' },
-      { keywords: ['zapatos', 'ropa', 'zara', 'h&m', 'peluqueria', 'spa', 'barberia', 'tenis', 'estetica', 'maquillaje', 'perfume'], category: 'Gustos', subcategory: 'Ropa y Cuidado Personal' },
-      { keywords: ['vuelo', 'hotel', 'airbnb', 'viaje', 'tiquetes', 'vacaciones', 'turismo', 'pasaje avion'], category: 'Gustos', subcategory: 'Viajes y Turismo' },
+      // ---- 50% NECESIDADES ----
+      { keywords: ['arriendo','renta','hipoteca','alquiler','administracion','cuota administracion','vivienda'], category:'Necesidades', subcategory:'Vivienda' },
+      { keywords: ['luz','energia','electricidad','agua','acueducto','gas','servicios publicos','internet','wifi','plan celular','recarga celular','claro','movistar','tigo','etb','wom'], category:'Necesidades', subcategory:'Servicios Públicos' },
+      { keywords: ['mercado','supermercado','exito','jumbo','carulla','d1','ara','olimpica','makro','justo y bueno','despensa','comida basica','alimentos','farmacia','drogueria','cruz verde','locatel','medicamentos','remedios','eps','salud','medico','doctor','odontologia','cita medica','laboratorio clinico'], category:'Necesidades', subcategory:'Mercado y Salud' },
+      { keywords: ['gasolina','combustible','transporte','pasaje','pasajes','bus','buseta','transmilenio','sitp','peaje','mantenimiento carro','tecnomecanica','soat','mecanico','terpel','texaco','biomax','primax','uber al trabajo'], category:'Necesidades', subcategory:'Transporte' },
+      { keywords: ['matricula','pension colegio','pension universidad','educacion','seguro','poliza','arl','seguro medico','seguro vida','seguro vehiculo'], category:'Necesidades', subcategory:'Educación y Seguros' },
+      { keywords: ['cuota minima','pago minimo','minimo tarjeta','cuota tarjeta','cuota credito','cuota prestamo','cuota vehiculo','cuota moto','prestamo','credito','letra'], category:'Necesidades', subcategory:'Cuotas Mínimas Deuda' },
 
-      // Ahorro y Deudas (20%)
-      { keywords: ['abono extra', 'abono capital', 'extra tarjeta', 'pago extra deuda', 'acelerador', 'amortizacion'], category: 'Ahorro/Deudas', subcategory: 'Abono Extra Deudas' },
-      { keywords: ['fondo emergencia', 'colchón', 'reserva', 'imprevistos'], category: 'Ahorro/Deudas', subcategory: 'Fondo de Emergencia' },
-      { keywords: ['inversion', 'cdt', 'fiducooperativa', 'ahorro retiro', 'meta', 'inversiones', 'acciones', 'cripto', 'ahorro futuro'], category: 'Ahorro/Deudas', subcategory: 'Metas de Ahorro' }
+      // ---- 30% GUSTOS ----
+      { keywords: ['netflix','spotify','disney','hbo','max','amazon prime','prime video','star+','paramount','crunchyroll','apple tv','apple music','youtube premium','youtube music','deezer','twitch','patreon','onlyfans','meta verified','meta ai','twitter blue','x premium','google one','icloud','dropbox','onedrive','chatgpt','gpt plus','claude pro','gemini advanced','canva','notion','linkedin premium','tinder','bumble','suscripcion','membresia'], category:'Gustos', subcategory:'Suscripciones y Streaming' },
+      { keywords: ['restaurante','mcdonalds','kfc','burger','frisby','crepes','starbucks','juan valdez','cafe','bar','cerveza','trago','domicilio','rappi','didi food','ifood','cena','almuerzo fuera','desayuno fuera','sushi','pizza','hamburguesa','helado','postre','antojo'], category:'Gustos', subcategory:'Salidas y Gastronomía' },
+      { keywords: ['cine','cinemark','procinal','concierto','boleta','evento','teatro','steam','playstation','xbox','nintendo','videojuego','parque','gimnasio','gym','smartfit','bodytech'], category:'Gustos', subcategory:'Entretenimiento y Ocio' },
+      { keywords: ['ropa','zapatos','tenis','zara','h&m','bershka','koaj','arturo calle','peluqueria','barberia','spa','estetica','maquillaje','perfume','cosmeticos','accesorios','joyeria'], category:'Gustos', subcategory:'Ropa y Cuidado Personal' },
+      { keywords: ['vuelo','tiquete','tiquetes','avion','hotel','airbnb','booking','despegar','viaje','vacaciones','turismo','paseo','crucero'], category:'Gustos', subcategory:'Viajes y Turismo' }
     ];
 
     const SUBCATEGORIES = {
-      'Necesidades': ['Vivienda', 'Servicios Públicos', 'Mercado y Salud', 'Transporte', 'Cuotas Mínimas Deuda'],
-      'Gustos': ['Salidas y Gastronomía', 'Entretenimiento y Ocio', 'Ropa y Cuidado Personal', 'Viajes y Turismo', 'Antojos y Varios'],
+      'Necesidades': ['Vivienda', 'Servicios Públicos', 'Mercado y Salud', 'Transporte', 'Educación y Seguros', 'Cuotas Mínimas Deuda'],
+      'Gustos': ['Salidas y Gastronomía', 'Suscripciones y Streaming', 'Entretenimiento y Ocio', 'Ropa y Cuidado Personal', 'Viajes y Turismo', 'Antojos y Varios'],
       'Ahorro/Deudas': ['Fondo de Emergencia', 'Abono Extra Deudas', 'Metas de Ahorro']
     };
+
+    // Definiciones 50/30/20 enviadas a la IA (Gemini) para clasificar según normas internacionales
+    const GEMINI_RULES_50_30_20 = 'Clasifica el gasto segun la regla 50/30/20 (Warren & Tyagi), calculada sobre el ingreso NETO. Categorias EXACTAS: '
+      + '"Necesidades" (50%) = gastos esenciales e inevitables: vivienda/arriendo, servicios publicos (agua, luz, gas, internet, plan celular), mercado y alimentacion basica, salud (EPS, medicamentos, citas), transporte necesario, educacion basica, seguros indispensables y la CUOTA MINIMA obligatoria de deudas o tarjetas. '
+      + '"Gustos" (30%) = estilo de vida NO esencial: restaurantes y domicilios, entretenimiento y ocio, TODAS las suscripciones de ocio o digitales (Netflix, Spotify, Disney, HBO, YouTube Premium, Meta Verified, X Premium, Google One, iCloud, ChatGPT, videojuegos), ropa y moda no esencial, belleza no basica, viajes, hobbies, gimnasio. '
+      + '"Ahorro/Deudas" (20%) = ahorro, fondo de emergencia, inversiones (CDT, fondos, acciones, pension voluntaria) y los ABONOS EXTRA a deudas (mas alla de la cuota minima). '
+      + 'Reglas de oro: (1) si la persona puede vivir sin eso, es "Gustos"; (2) cuota minima de deuda = "Necesidades", abono extra voluntario = "Ahorro/Deudas"; (3) "Meta Verified", "Meta", "Google One", "iCloud" y similares son SUSCRIPCIONES = "Gustos" (NO son metas de ahorro). Responde solo con una de: "Necesidades", "Gustos", "Ahorro/Deudas".';
+
+    /* Normaliza (minúsculas, sin tildes) y compara por palabra/frase completa,
+       para evitar falsos positivos como "meta" dentro de "Meta Verified". */
+    function normalizeText(s) {
+      return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+    }
+    function keywordsMatch(text, keywords) {
+      const q = normalizeText(text);
+      return keywords.some(function(k) {
+        const kn = normalizeText(k).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const re = new RegExp('(^|[^a-z0-9])' + kn + '([^a-z0-9]|$)');
+        return re.test(q);
+      });
+    }
 
     let state = {
       netIncome: 3000,
@@ -1165,7 +1282,7 @@
       requireGeminiKey();
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
 
-      const prompt = "Escucha con atención esta nota de voz o mensaje de audio sobre un gasto. Extrae el concepto del gasto o comercio, el monto numérico pagado, la fecha en YYYY-MM-DD (si no se menciona usa la fecha de hoy), y clasifícalo en la regla 50/30/20 en una de las categorías exactas: 'Necesidades', 'Gustos', 'Ahorro/Deudas', y asigna la subcategoría adecuada.";
+      const prompt = GEMINI_RULES_50_30_20 + " Ahora escucha con atención esta nota de voz o mensaje de audio sobre un gasto. Extrae el concepto del gasto o comercio, el monto numérico pagado, la fecha en YYYY-MM-DD (si no se menciona usa la fecha de hoy), clasifícalo en una de las categorías exactas ('Necesidades', 'Gustos', 'Ahorro/Deudas') y asigna la subcategoría adecuada.";
 
       const payload = {
         contents: [{
@@ -1205,7 +1322,7 @@
       requireGeminiKey();
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
 
-      const prompt = "Analiza esta imagen de factura o recibo. Extrae el nombre del comercio/concepto, el monto total pagado como número, la fecha en YYYY-MM-DD (si no se ve usa la fecha de hoy), y clasifícalo en la regla 50/30/20 en una de las categorías exactas: 'Necesidades', 'Gustos', 'Ahorro/Deudas', y asigna la subcategoría adecuada.";
+      const prompt = GEMINI_RULES_50_30_20 + " Ahora analiza esta imagen de factura o recibo. Extrae el nombre del comercio/concepto, el monto total pagado como número, la fecha en YYYY-MM-DD (si no se ve usa la fecha de hoy), clasifícalo en una de las categorías exactas ('Necesidades', 'Gustos', 'Ahorro/Deudas') y asigna la subcategoría adecuada.";
 
       const payload = {
         contents: [{
@@ -1245,7 +1362,7 @@
       requireGeminiKey();
       const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
 
-      const prompt = `Analiza este texto o archivo de gasto: "${textDescription.slice(0, 1000)}". Opcional monto: ${amountVal}. Extrae un concepto claro, el monto (si se detecta), y clasifícalo en la regla 50/30/20 ('Necesidades', 'Gustos' o 'Ahorro/Deudas') y subcategoría apropiada.`;
+      const prompt = `${GEMINI_RULES_50_30_20}\n\nAnaliza este gasto: "${textDescription.slice(0, 1000)}". Monto opcional: ${amountVal}. Extrae un concepto claro, el monto (si se detecta), clasifícalo con la regla anterior ('Necesidades', 'Gustos' o 'Ahorro/Deudas') y asigna una subcategoría apropiada.`;
 
       const payload = {
         contents: [{ parts: [{ text: prompt }] }],
@@ -1378,7 +1495,7 @@
       let match = null;
 
       for (const rule of AUTO_RULES) {
-        if (rule.keywords.some(k => query.includes(k))) {
+        if (keywordsMatch(query, rule.keywords)) {
           match = rule;
           break;
         }
