@@ -1382,34 +1382,41 @@
       showAILoading(`Analizando ${file.type.startsWith('audio/') ? 'nota de voz' : 'archivo'} con IA Gemini...`);
 
       try {
-        let extractedExpense = null;
+        let items = [];
 
         if (file.type.startsWith('image/')) {
           const base64Data = await fileToBase64(file);
-          extractedExpense = await analyzeImageWithGemini(base64Data, file.type);
+          items = await analyzeImageWithGemini(base64Data, file.type);
         } else if (file.type.startsWith('audio/')) {
           const base64Data = await fileToBase64(file);
-          extractedExpense = await analyzeAudioWithGemini(base64Data, file.type || 'audio/mp3');
+          items = await analyzeAudioWithGemini(base64Data, file.type || 'audio/mp3');
         } else {
           const textContent = await readFileAsText(file);
-          extractedExpense = await classifyTextWithGemini(textContent || file.name);
+          items = await analyzeTextFileWithGemini(textContent || file.name);
         }
 
-        if (extractedExpense && extractedExpense.concept && extractedExpense.amount) {
-          const newExpense = {
-            id: Date.now().toString(),
-            date: extractedExpense.date || new Date().toISOString().slice(0, 10),
-            concept: extractedExpense.concept,
-            category: extractedExpense.category || 'Necesidades',
-            subcategory: extractedExpense.subcategory || 'Mercado y Salud',
-            amount: parseFloat(extractedExpense.amount)
-          };
+        // Filtra los gastos válidos extraídos (puede haber varios en un mismo documento)
+        const valid = (items || []).filter(x => x && x.concept && !isNaN(parseFloat(x.amount)) && parseFloat(x.amount) > 0);
 
-          state.expenses.unshift(newExpense);
+        if (valid.length > 0) {
+          const today = new Date().toISOString().slice(0, 10);
+          let resumen = '';
+          valid.forEach((x, idx) => {
+            const exp = {
+              id: (Date.now() + idx).toString(),
+              date: (x.date && /^\d{4}-\d{2}-\d{2}$/.test(x.date)) ? x.date : today,
+              concept: x.concept,
+              category: (['Necesidades', 'Gustos', 'Ahorro/Deudas'].includes(x.category)) ? x.category : 'Necesidades',
+              subcategory: x.subcategory || 'Mercado y Salud',
+              amount: parseFloat(x.amount)
+            };
+            state.expenses.unshift(exp);
+            resumen += `\n• ${exp.concept}: ${formatMoney(exp.amount)}  →  ${exp.category}`;
+          });
           updateDashboard();
-          alert(`¡${file.type.startsWith('audio/') ? 'Nota de voz' : 'Factura/Archivo'} procesado con éxito!\n\nConcepto: ${newExpense.concept}\nMonto: $${newExpense.amount}\nCategoría: ${newExpense.category} (${newExpense.subcategory})`);
+          alert(`¡Documento procesado con éxito!\n\nSe registraron ${valid.length} gasto(s):${resumen}\n\n(Revisa el registro más abajo. Recuerda que el periodo debe incluir sus fechas para verlos.)`);
         } else {
-          alert("No se pudo extraer automáticamente la información del archivo/audio. Intenta dictar por voz o verificar el archivo.");
+          alert("No se pudieron extraer gastos del archivo. Verifica que el documento sea legible e intenta de nuevo.");
         }
       } catch (error) {
         console.error("Error al procesar archivo:", error);
@@ -1428,23 +1435,15 @@
       }
     }
 
-    async function analyzeAudioWithGemini(base64Data, mimeType) {
-      requireGeminiKey();
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+    // Instrucciones para extraer TODOS los gastos de un documento (varios renglones) con formato COP correcto
+    const GEMINI_MULTI = ' IMPORTANTE: extrae TODOS los gastos o renglones que aparezcan (puede haber varios); devuelve un objeto por CADA gasto dentro del arreglo "items". Los montos están en pesos colombianos: el punto (.) es separador de MILES y la coma (,) es decimal; devuelve cada monto como número ENTERO sin separadores (ejemplos: "499.100" = 499100; "1.858.224" = 1858224; "67.440" = 67440; "33.298" = 33298). Asigna a cada gasto una subcategoría EXACTA según su categoría: Necesidades = [Vivienda, Servicios Públicos, Mercado y Salud, Transporte, Educación y Seguros, Cuotas Mínimas Deuda]; Gustos = [Salidas y Gastronomía, Suscripciones y Streaming, Entretenimiento y Ocio, Ropa y Cuidado Personal, Viajes y Turismo, Antojos y Varios]; Ahorro/Deudas = [Fondo de Emergencia, Abono Extra Deudas, Metas de Ahorro]. Aportes a seguridad social/salud van en Necesidades (Mercado y Salud); aprendizaje/cursos en Necesidades (Educación y Seguros); ahorros en Ahorro/Deudas (Metas de Ahorro); suscripciones en Gustos. Si un gasto no trae fecha, usa la fecha de hoy en formato YYYY-MM-DD.';
 
-      const prompt = GEMINI_RULES_50_30_20 + " Ahora escucha con atención esta nota de voz o mensaje de audio sobre un gasto. Extrae el concepto del gasto o comercio, el monto numérico pagado, la fecha en YYYY-MM-DD (si no se menciona usa la fecha de hoy), clasifícalo en una de las categorías exactas ('Necesidades', 'Gustos', 'Ahorro/Deudas') y asigna la subcategoría adecuada.";
-
-      const payload = {
-        contents: [{
-          role: "user",
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: mimeType, data: base64Data } }
-          ]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
+    const MULTI_SCHEMA = {
+      type: "OBJECT",
+      properties: {
+        items: {
+          type: "ARRAY",
+          items: {
             type: "OBJECT",
             properties: {
               concept: { type: "STRING" },
@@ -1456,56 +1455,39 @@
             required: ["concept", "amount", "category", "subcategory"]
           }
         }
-      };
+      },
+      required: ["items"]
+    };
 
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+    async function callGeminiMulti(promptText, inlineData, mimeType) {
+      requireGeminiKey();
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+      const parts = [{ text: promptText }];
+      if (inlineData) parts.push({ inlineData: { mimeType: mimeType, data: inlineData } });
+      const payload = {
+        contents: [{ role: "user", parts: parts }],
+        generationConfig: { responseMimeType: "application/json", responseSchema: MULTI_SCHEMA }
+      };
+      const res = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const data = await res.json();
       const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      return text ? JSON.parse(text) : null;
+      const parsed = text ? JSON.parse(text) : null;
+      return (parsed && Array.isArray(parsed.items)) ? parsed.items : [];
+    }
+
+    async function analyzeAudioWithGemini(base64Data, mimeType) {
+      const prompt = GEMINI_RULES_50_30_20 + " Ahora escucha esta nota de voz o audio; puede mencionar uno o varios gastos." + GEMINI_MULTI;
+      return await callGeminiMulti(prompt, base64Data, mimeType);
     }
 
     async function analyzeImageWithGemini(base64Data, mimeType) {
-      requireGeminiKey();
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiApiKey}`;
+      const prompt = GEMINI_RULES_50_30_20 + " Ahora analiza esta imagen de factura, recibo o tabla de gastos. Puede contener VARIOS renglones/gastos; extrae cada uno con su concepto y su monto total." + GEMINI_MULTI;
+      return await callGeminiMulti(prompt, base64Data, mimeType);
+    }
 
-      const prompt = GEMINI_RULES_50_30_20 + " Ahora analiza esta imagen de factura o recibo. Extrae el nombre del comercio/concepto, el monto total pagado como número, la fecha en YYYY-MM-DD (si no se ve usa la fecha de hoy), clasifícalo en una de las categorías exactas ('Necesidades', 'Gustos', 'Ahorro/Deudas') y asigna la subcategoría adecuada.";
-
-      const payload = {
-        contents: [{
-          role: "user",
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType: mimeType, data: base64Data } }
-          ]
-        }],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: "OBJECT",
-            properties: {
-              concept: { type: "STRING" },
-              amount: { type: "NUMBER" },
-              date: { type: "STRING" },
-              category: { type: "STRING", enum: ["Necesidades", "Gustos", "Ahorro/Deudas"] },
-              subcategory: { type: "STRING" }
-            },
-            required: ["concept", "amount", "category", "subcategory"]
-          }
-        }
-      };
-
-      const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await res.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      return text ? JSON.parse(text) : null;
+    async function analyzeTextFileWithGemini(textContent) {
+      const prompt = GEMINI_RULES_50_30_20 + ' Ahora analiza el siguiente contenido de un archivo (texto/CSV) que puede contener VARIOS gastos, uno por línea o fila: "' + (textContent || '').slice(0, 4000) + '".' + GEMINI_MULTI;
+      return await callGeminiMulti(prompt, null, null);
     }
 
     async function classifyTextWithGemini(textDescription, amountVal = 0) {
