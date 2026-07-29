@@ -91,6 +91,15 @@
       button, label[for], a { -webkit-tap-highlight-color: transparent; }
       #net-income-input { font-size: 1.75rem; }
     }
+
+    /* Selector de periodo (segmented control) */
+    .seg-btn { transition: all .15s ease; }
+    .seg-btn.is-active {
+      background-color: #4f46e5 !important;
+      color: #fff !important;
+      border-color: #6366f1 !important;
+      box-shadow: 0 10px 15px -3px rgba(79,70,229,.35);
+    }
   </style>
 </head>
 <body class="h-full flex flex-col font-sans antialiased bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white pb-16 sm:pb-0">
@@ -206,6 +215,28 @@
       <div id="express-feedback" class="mt-2 text-xs hidden"></div>
     </section>
 
+    <!-- Selector de Periodo + Registrar Ingreso extra -->
+    <section class="glass-card rounded-2xl p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 border border-indigo-500/30 shrink-0">
+          <i class="fa-solid fa-calendar-days"></i>
+        </div>
+        <div>
+          <p class="text-sm font-bold text-white">Periodo de análisis</p>
+          <p class="text-[11px] text-slate-400">Desglose de ingresos y gastos · vista <span class="period-name text-indigo-300 font-semibold">Mensual</span></p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-1.5">
+        <button data-period="mensual" onclick="setPeriod('mensual')" class="seg-btn is-active px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800">Mensual</button>
+        <button data-period="trimestral" onclick="setPeriod('trimestral')" class="seg-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800">Trimestral</button>
+        <button data-period="semestral" onclick="setPeriod('semestral')" class="seg-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800">Semestral</button>
+        <button data-period="anual" onclick="setPeriod('anual')" class="seg-btn px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-900 text-slate-400 border border-slate-700 hover:bg-slate-800">Anual</button>
+        <button onclick="openIncomeModal()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 active:scale-95">
+          <i class="fa-solid fa-plus"></i> Ingreso extra
+        </button>
+      </div>
+    </section>
+
     <section class="grid grid-cols-1 md:grid-cols-12 gap-6">
 
       <!-- Card Ingreso Neto Configurable -->
@@ -213,7 +244,7 @@
         <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-indigo-600/10 rounded-full blur-2xl pointer-events-none"></div>
         <div>
           <div class="flex items-center justify-between mb-3">
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ingreso Mensual Neto</span>
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Ingreso base mensual (neto)</span>
             <span class="text-xs text-indigo-400 font-medium cursor-pointer hover:underline" onclick="editIncome()">
               <i class="fa-solid fa-pen-to-square mr-1"></i>Editar
             </span>
@@ -223,7 +254,22 @@
             <input type="number" id="net-income-input" value="3000" step="50" min="0" onchange="updateDashboard()"
                    class="bg-transparent text-3xl font-extrabold text-white focus:outline-none focus:border-b-2 focus:border-indigo-500 w-full tracking-tight">
           </div>
-          <p class="text-xs text-slate-400 mt-2">Base sobre la cual se calculan los límites del presupuesto 50/30/20.</p>
+          <p class="text-xs text-slate-400 mt-2">Ingreso recurrente (sueldo). Las metas 50/30/20 se calculan sobre el <b>ingreso total del periodo</b>.</p>
+
+          <div class="mt-3 pt-3 border-t border-slate-800 space-y-1.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400">Base del periodo (<span id="period-months-label">1 mes</span>)</span>
+              <span id="income-base-period" class="font-semibold text-slate-200">$0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-slate-400 flex items-center gap-1"><i class="fa-solid fa-plus text-[9px] text-emerald-400"></i> Ingresos extra (periodo)</span>
+              <span id="income-extra-period" class="font-semibold text-emerald-400">$0</span>
+            </div>
+            <div class="flex items-center justify-between pt-1 border-t border-slate-800/70">
+              <span class="text-white font-semibold">Ingreso total del periodo</span>
+              <span id="income-total-period" class="font-extrabold text-indigo-300">$0</span>
+            </div>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 mt-4 pt-4 border-t border-slate-800">
@@ -372,11 +418,63 @@
       </div>
     </section>
 
+    <!-- Resumen del periodo: Ingresos vs Gastos + lista de ingresos extra -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Tarjeta Ingresos vs Gastos -->
+      <div class="lg:col-span-4 glass-card rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold text-white">Ingresos vs Gastos</h3>
+          <span class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold period-name">Mensual</span>
+        </div>
+        <div class="space-y-3">
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-emerald-500/20">
+            <span class="text-xs text-slate-300 flex items-center gap-2"><i class="fa-solid fa-arrow-down text-emerald-400"></i> Ingresos del periodo</span>
+            <span id="period-income-total" class="text-base font-bold text-emerald-400">$0</span>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-slate-950/60 border border-rose-500/20">
+            <span class="text-xs text-slate-300 flex items-center gap-2"><i class="fa-solid fa-arrow-up text-rose-400"></i> Gastos del periodo</span>
+            <span id="period-expense-total" class="text-base font-bold text-rose-400">$0</span>
+          </div>
+          <div class="flex items-center justify-between p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30">
+            <span class="text-xs text-white font-semibold flex items-center gap-2"><i class="fa-solid fa-scale-balanced text-indigo-300"></i> Balance (ahorro potencial)</span>
+            <span id="period-balance" class="text-xl font-extrabold text-emerald-400">$0</span>
+          </div>
+        </div>
+        <p class="text-[10px] text-slate-500 mt-3">La base del periodo asume el mismo ingreso mensual repetido; los ingresos extra se suman por su fecha.</p>
+      </div>
+
+      <!-- Lista de Ingresos extra del periodo -->
+      <div class="lg:col-span-8 glass-card rounded-2xl p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-sm font-bold text-white">Ingresos Extra Registrados</h3>
+            <p class="text-xs text-slate-400">Bonos, ventas, freelance u otros ingresos del periodo <span class="period-name text-indigo-300 font-semibold">Mensual</span></p>
+          </div>
+          <button onclick="openIncomeModal()" class="px-3 py-1.5 text-xs font-bold rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30 transition flex items-center gap-2 active:scale-95">
+            <i class="fa-solid fa-plus"></i> <span class="hidden sm:inline">Nuevo</span> Ingreso
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-4">Fecha</th>
+                <th class="py-3 px-4">Concepto</th>
+                <th class="py-3 px-4 text-right">Monto ($)</th>
+                <th class="py-3 px-4 text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody id="incomes-table-body" class="divide-y divide-slate-800/60"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <section class="glass-card rounded-2xl p-5 space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h3 class="text-base font-bold text-white">Registro de Transacciones</h3>
-          <p class="text-xs text-slate-400">Listado cronológico con autoclasificación inteligente</p>
+          <h3 class="text-base font-bold text-white">Registro de Transacciones (Gastos)</h3>
+          <p class="text-xs text-slate-400">Gastos del periodo <span class="period-name text-indigo-300 font-semibold">Mensual</span> con autoclasificación inteligente</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -495,6 +593,50 @@
           <button type="submit" class="px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-lg shadow-indigo-600/30 transition">
             Guardar Gasto
           </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Registrar Ingreso extra -->
+  <div id="income-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 glass-modal backdrop-blur-md">
+    <div class="glass-card bg-slate-900 border-emerald-500/40 rounded-2xl w-full max-w-md p-6 shadow-2xl relative">
+      <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
+        <h3 class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-sack-dollar text-emerald-400"></i> Registrar Ingreso Extra
+        </h3>
+        <button onclick="closeModal('income-modal')" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+
+      <form id="income-form" onsubmit="handleIncomeSubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Concepto del ingreso *</label>
+          <input type="text" id="income-concept" required placeholder="Ej: Bono, Venta, Freelance, Reembolso, Comisión..."
+                 class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Monto ($) *</label>
+            <input type="number" step="0.01" min="0.01" id="income-amount" required placeholder="0.00"
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-slate-300 mb-1">Fecha *</label>
+            <input type="date" id="income-date" required
+                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+          </div>
+        </div>
+
+        <div class="p-3 bg-emerald-950/30 border border-emerald-500/30 rounded-xl text-[11px] text-emerald-200">
+          <i class="fa-solid fa-circle-info mr-1 text-emerald-400"></i> Este ingreso se suma al ingreso total del mes/periodo según su fecha, y ajusta automáticamente tus metas 50/30/20.
+        </div>
+
+        <div class="pt-3 flex items-center justify-end space-x-3 border-t border-slate-800">
+          <button type="button" onclick="closeModal('income-modal')" class="px-4 py-2 text-xs font-medium rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition">Cancelar</button>
+          <button type="submit" class="px-4 py-2 text-xs font-semibold rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30 transition">Guardar Ingreso</button>
         </div>
       </form>
     </div>
@@ -799,11 +941,17 @@
         { id: '7', date: '2026-07-12', concept: 'Compras Ropa de Temporada', category: 'Gustos', subcategory: 'Ropa y Cuidado Personal', amount: 140 },
         { id: '8', date: '2026-07-15', concept: 'Abono Extraordinario a Capital Deuda', category: 'Ahorro/Deudas', subcategory: 'Abono Extra Deudas', amount: 300 },
         { id: '9', date: '2026-07-18', concept: 'Aporte Colchón Emergencia', category: 'Ahorro/Deudas', subcategory: 'Fondo de Emergencia', amount: 200 }
+      ],
+      extraIncomes: [
+        { id: 'i1', date: '2026-07-20', concept: 'Bono / Trabajo extra', amount: 500 }
       ]
     };
 
     let chartInstance = null;
     let isPieChart = false;
+    let currentPeriod = 'mensual';   // mensual | trimestral | semestral | anual
+    let periodExpenses = [];
+    let periodTotalIncome = 0;
 
     /* =========================================================
        CONFIGURACIÓN GOOGLE (login + Drive) Y CEREBRO GEMINI
@@ -1041,7 +1189,7 @@
           });
           const data = await contentRes.json();
           if (data && Array.isArray(data.expenses)) {
-            state = { netIncome: data.netIncome || 0, expenses: data.expenses };
+            state = { netIncome: data.netIncome || 0, expenses: data.expenses, extraIncomes: Array.isArray(data.extraIncomes) ? data.extraIncomes : [] };
             const incomeInput = document.getElementById('net-income-input');
             if (incomeInput) incomeInput.value = state.netIncome;
             updateDashboard();
@@ -1110,6 +1258,8 @@
     window.onload = function() {
       const dateInput = document.getElementById('modal-date');
       if (dateInput) dateInput.valueAsDate = new Date();
+      const incomeDate = document.getElementById('income-date');
+      if (incomeDate) incomeDate.valueAsDate = new Date();
       updateSubcategoryDropdown();
 
       // Precargar API key guardada en el modal de configuración
@@ -1419,19 +1569,52 @@
       document.getElementById('ai-loading-modal').classList.add('hidden');
     }
 
+    /* ---------- PERIODO (mensual/trimestral/semestral/anual) ---------- */
+    function monthsInPeriod(p) { return p === 'anual' ? 12 : p === 'semestral' ? 6 : p === 'trimestral' ? 3 : 1; }
+    function periodLabel(p) { return p === 'anual' ? 'Anual' : p === 'semestral' ? 'Semestral' : p === 'trimestral' ? 'Trimestral' : 'Mensual'; }
+    function getPeriodRange(p) {
+      const now = new Date();
+      const y = now.getFullYear(), m = now.getMonth();
+      let startM, endM;
+      if (p === 'anual') { startM = 0; endM = 11; }
+      else if (p === 'semestral') { startM = m < 6 ? 0 : 6; endM = startM + 5; }
+      else if (p === 'trimestral') { startM = Math.floor(m / 3) * 3; endM = startM + 2; }
+      else { startM = m; endM = m; }
+      return { start: new Date(y, startM, 1), end: new Date(y, endM + 1, 0, 23, 59, 59) };
+    }
+    function dateInRange(dateStr, range) {
+      if (!dateStr) return false;
+      const d = new Date(dateStr + 'T12:00:00');
+      return d >= range.start && d <= range.end;
+    }
+    function setPeriod(p) {
+      currentPeriod = p;
+      document.querySelectorAll('[data-period]').forEach(function (b) {
+        b.classList.toggle('is-active', b.getAttribute('data-period') === p);
+      });
+      updateDashboard();
+    }
+    function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+
     function updateDashboard() {
       const netIncomeInput = document.getElementById('net-income-input');
       if (netIncomeInput) {
         state.netIncome = parseFloat(netIncomeInput.value) || 0;
       }
 
-      let spentNec = 0;
-      let spentGus = 0;
-      let spentAho = 0;
-      let debtMin = 0;
-      let debtExtra = 0;
+      const range = getPeriodRange(currentPeriod);
+      const months = monthsInPeriod(currentPeriod);
 
-      state.expenses.forEach(e => {
+      // Filtrado por periodo
+      periodExpenses = state.expenses.filter(e => dateInRange(e.date, range));
+      const extrasPeriodo = (state.extraIncomes || []).filter(i => dateInRange(i.date, range));
+      const extraIncomeSum = extrasPeriodo.reduce((s, i) => s + (parseFloat(i.amount) || 0), 0);
+
+      const baseIncome = state.netIncome * months;   // ingreso base recurrente del periodo
+      periodTotalIncome = baseIncome + extraIncomeSum;
+
+      let spentNec = 0, spentGus = 0, spentAho = 0, debtMin = 0, debtExtra = 0;
+      periodExpenses.forEach(e => {
         const amt = parseFloat(e.amount) || 0;
         if (e.category === 'Necesidades') {
           spentNec += amt;
@@ -1445,7 +1628,13 @@
       });
 
       const totalSpent = spentNec + spentGus + spentAho;
-      const totalRemaining = state.netIncome - totalSpent;
+      const totalRemaining = periodTotalIncome - totalSpent;
+
+      // Tarjeta de ingreso (base + extra = total del periodo)
+      setText('income-base-period', formatMoney(baseIncome));
+      setText('income-extra-period', formatMoney(extraIncomeSum));
+      setText('income-total-period', formatMoney(periodTotalIncome));
+      setText('period-months-label', months + (months === 1 ? ' mes' : ' meses'));
 
       const totalSpentEl = document.getElementById('total-spent-display');
       if (totalSpentEl) totalSpentEl.textContent = formatMoney(totalSpent);
@@ -1456,9 +1645,9 @@
         totalRemEl.className = totalRemaining < 0 ? 'text-lg font-bold text-rose-400' : 'text-lg font-bold text-emerald-400';
       }
 
-      const targetNec = state.netIncome * 0.50;
-      const targetGus = state.netIncome * 0.30;
-      const targetAho = state.netIncome * 0.20;
+      const targetNec = periodTotalIncome * 0.50;
+      const targetGus = periodTotalIncome * 0.30;
+      const targetAho = periodTotalIncome * 0.20;
 
       updateBoxKPI('nec', spentNec, targetNec);
       updateBoxKPI('gus', spentGus, targetGus);
@@ -1469,12 +1658,67 @@
       const debtExtraEl = document.getElementById('debt-extra-text');
       if (debtExtraEl) debtExtraEl.textContent = formatMoney(debtExtra);
 
+      // Resumen Ingresos vs Gastos del periodo
+      setText('period-income-total', formatMoney(periodTotalIncome));
+      setText('period-expense-total', formatMoney(totalSpent));
+      const balEl = document.getElementById('period-balance');
+      if (balEl) {
+        balEl.textContent = formatMoney(totalRemaining);
+        balEl.className = 'text-xl font-extrabold ' + (totalRemaining < 0 ? 'text-rose-400' : 'text-emerald-400');
+      }
+      document.querySelectorAll('.period-name').forEach(el => el.textContent = periodLabel(currentPeriod));
+
       renderDonutChart(spentNec, spentGus, spentAho, targetNec, targetGus, targetAho);
       renderSubcategoriesBreakdown(spentNec, spentGus, spentAho);
+      renderIncomesList(extrasPeriodo);
       filterExpenses();
 
       // Autoguardado en Google Drive (si el usuario inició sesión)
       scheduleDriveSave();
+    }
+
+    function renderIncomesList(list) {
+      const tbody = document.getElementById('incomes-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" class="py-4 text-center text-slate-500 italic">Sin ingresos extra en este periodo.</td></tr>';
+        return;
+      }
+      list.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-900/50 transition';
+        tr.innerHTML = `
+          <td class="py-2.5 px-4 text-slate-400 font-mono">${item.date}</td>
+          <td class="py-2.5 px-4 font-semibold text-white">${escapeHtml(item.concept)}</td>
+          <td class="py-2.5 px-4 text-right font-bold text-emerald-400">+${formatMoney(item.amount)}</td>
+          <td class="py-2.5 px-4 text-center">
+            <button onclick="deleteIncome('${item.id}')" class="text-slate-500 hover:text-rose-400 transition" title="Eliminar ingreso">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function handleIncomeSubmit(event) {
+      event.preventDefault();
+      const concept = document.getElementById('income-concept').value.trim();
+      const amount = parseFloat(document.getElementById('income-amount').value);
+      const date = document.getElementById('income-date').value;
+      if (!concept || isNaN(amount) || amount <= 0 || !date) return;
+      if (!state.extraIncomes) state.extraIncomes = [];
+      state.extraIncomes.unshift({ id: 'i' + Date.now().toString(), date, concept, amount });
+      updateDashboard();
+      closeModal('income-modal');
+      document.getElementById('income-form').reset();
+      const d = document.getElementById('income-date');
+      if (d) d.valueAsDate = new Date();
+    }
+
+    function deleteIncome(id) {
+      state.extraIncomes = (state.extraIncomes || []).filter(i => i.id !== id);
+      updateDashboard();
     }
 
     function editIncome() {
@@ -1665,16 +1909,16 @@
       container.innerHTML = '';
 
       const categoriesData = [
-        { name: 'Necesidades', spent: spentNec, target: state.netIncome * 0.5, color: 'text-blue-400' },
-        { name: 'Gustos', spent: spentGus, target: state.netIncome * 0.3, color: 'text-orange-400' },
-        { name: 'Ahorro/Deudas', spent: spentAho, target: state.netIncome * 0.2, color: 'text-emerald-400' }
+        { name: 'Necesidades', spent: spentNec, target: periodTotalIncome * 0.5, color: 'text-blue-400' },
+        { name: 'Gustos', spent: spentGus, target: periodTotalIncome * 0.3, color: 'text-orange-400' },
+        { name: 'Ahorro/Deudas', spent: spentAho, target: periodTotalIncome * 0.2, color: 'text-emerald-400' }
       ];
 
       categoriesData.forEach(cat => {
         const subMap = {};
         SUBCATEGORIES[cat.name].forEach(s => subMap[s] = 0);
 
-        state.expenses.filter(e => e.category === cat.name).forEach(e => {
+        periodExpenses.filter(e => e.category === cat.name).forEach(e => {
           subMap[e.subcategory] = (subMap[e.subcategory] || 0) + parseFloat(e.amount);
         });
 
@@ -1790,7 +2034,7 @@
       const catFilter = catElem ? catElem.value : 'ALL';
       tbody.innerHTML = '';
 
-      const filtered = state.expenses.filter(e => {
+      const filtered = periodExpenses.filter(e => {
         const matchesSearch = e.concept.toLowerCase().includes(search) || e.subcategory.toLowerCase().includes(search);
         const matchesCat = catFilter === 'ALL' || e.category === catFilter;
         return matchesSearch && matchesCat;
@@ -1928,6 +2172,12 @@
 
     function openSheetsModal() {
       openModal('sheets-modal');
+    }
+
+    function openIncomeModal() {
+      const d = document.getElementById('income-date');
+      if (d && !d.value) d.valueAsDate = new Date();
+      openModal('income-modal');
     }
   </script>
 </body>
